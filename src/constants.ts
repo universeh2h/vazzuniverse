@@ -1,0 +1,1 @@
+export  const URL_LOGO = process.env.NEXT_PUBLIC_LOGO_URL
