@@ -21,5 +21,18 @@ export const registerSchema = z.object({
 
   password: passwordSchema,
 });
+
+export const updateUser = z.object({
+  username: z.string(),
+  name: z.string(),
+  whatsapp: z
+    .string()
+    .transform((val) => {
+      const parsed = parseInt(val, 10);
+      return isNaN(parsed) ? null : parsed;
+    })
+    .refine((val) => val !== null, { message: 'Invalid WhatsApp number' }),
+});
 export type loginAuth = z.infer<typeof loginSchema>;
 export type RegisterAuth = z.infer<typeof registerSchema>;
+export type UpdateUser = z.infer<typeof updateUser>;

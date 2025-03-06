@@ -9,7 +9,6 @@ export default {
   providers: [
     Credentials({
       async authorize(credentials) {
-        // Validate credentials using Zod
         const validatedCredentials = loginSchema.parse(credentials);
         if (validatedCredentials) {
           const { username, password } = validatedCredentials;
@@ -41,7 +40,6 @@ export default {
       },
     }),
     Google({
-      // Configure Google provider
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
@@ -51,14 +49,11 @@ export default {
       if (user) {
         token.role = user.role;
         token.id = user.id;
-        token.username = user.username;
       }
       return token;
     },
     async session({ session, token }) {
-      // Add role and id to session
       if (token.role) session.user.role = token.role as string;
-      if (token.username) session.user.username = token.username as string;
 
       if (token.id) session.user.id = token.id as string;
       return session;

@@ -27,7 +27,7 @@ export default function RegisterPage() {
       name: '',
       username: '',
       password: '',
-      whatsapp: 0,
+      whatsapp: 62,
     },
   });
 
@@ -37,16 +37,15 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const result = await CreateUser({ credentials: data });
-      console.log(data);
       if (result.success) {
         toast.success(result.message);
         router.push('/login');
       } else {
         toast.error(result.message);
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error(' internal server error');
-      console.error('Register failed:', error);
     } finally {
       reset();
       setIsLoading(false);

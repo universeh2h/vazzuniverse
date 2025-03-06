@@ -1,9 +1,10 @@
 'use server';
 import { prisma } from '@/lib/prisma';
-import { RegisterAuth } from '@/types/schema/auth';
+import { RegisterAuth, UpdateUser } from '@/types/schema/auth';
 import { User } from '@/types/schema/user';
 import { hashSync } from 'bcryptjs';
 import { z } from 'zod';
+import { auth } from '../../../../auth';
 
 export type CreateUserResult = {
   success: boolean;
@@ -96,4 +97,83 @@ export async function findUserByUsername(username: string) {
       whatsapp: true,
     },
   });
+}
+
+export async function findUserById(id: string) {
+  const user = await prisma.users.findUnique({
+    where: { id },
+    select: {
+      username: true,
+      name: true,
+      balance: true,
+      id: true,
+      createdAt: true,
+      role: true,
+      apiKey: true,
+      otp: true,
+      updatedAt: true,
+      whatsapp: true,
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...user,
+    balance: user?.balance.toString(),
+  };
+}
+export async function UpdateUsers({
+  credentials,
+}: {
+  credentials: UpdateUser;
+}): Promise<CreateUserResult> {
+  try {
+    const user = await auth();
+
+    if (!user) {
+      return {
+        message: 'Unauthorized: No active session',
+        success: false,
+      };
+    }
+
+    // This check is wrong! You're returning an error if the user exists
+    // Instead, check if the username is already taken by another user
+    if (credentials.username !== user.user.username) {
+      const existingUser = await findUserByUsername(credentials.username);
+      if (existingUser) {
+        return {
+          message: 'Username telah Terpakai',
+          success: false,
+        };
+      }
+    }
+
+    const data = await prisma.users.update({
+      where: {
+        id: user.user.id,
+      },
+      data: {
+        username: credentials.username,
+        name: credentials.name,
+        whatsapp: credentials.whatsapp.toString(),
+      },
+    });
+
+    return {
+      message: 'Profile updated successfully',
+      success: true,
+      user: { ...data, balance: data.balance.toString() },
+    };
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return {
+      message:
+        error instanceof Error ? error.message : 'Failed to update profile',
+      success: false,
+    };
+  }
 }

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
@@ -46,7 +46,7 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #001435;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -126,10 +126,9 @@
     }
 
     /* Firefox */
-    input[type="number"] {
+    input[type='number'] {
       -moz-appearance: textfield;
     }
-  
   }
   body {
     @apply bg-background text-foreground;

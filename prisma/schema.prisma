@@ -29,6 +29,8 @@ model Users  {
   Account Account[]
   Session Session[]
 
+
+@@index([username])
   @@map("users")
 }
 
@@ -69,4 +71,39 @@ model Session {
   user         Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
  
   @@map("sessions")
+}
+
+
+model Categories  {
+  id              Int    @id  @default(autoincrement())
+  name            String  @map("nama")
+  subName         String  @map("sub_nama")
+  brand           String
+  kode            String?
+  serverId        Int  @map("server_id")
+  status  String
+  thumbnail   String
+  type   String   @map("tipe")
+  instruction  String?  @map("petunjuk")
+  ketLayanan   String?  @map("ket_layanan")
+  ketId   String?   @map("ket_id")
+  placeholder1    String  @map("placeholder_1")
+  placeholder2   String  @map("placeholder_2")
+  createdAt  DateTime   @default(now())  @map("created_at")
+  updatedAt   DateTime  @updatedAt  @map("updated_at")
+  bannerLayanan   String   @map("bannerlayanan")
+
+  @@map("kategoris")
+}
+
+model  Berita  {
+  id  Int @id @default(autoincrement())
+  path  String 
+  type  String  @map("tipe")
+  description  String  @map("deskripsi")
+  createdAt   DateTime @default(now())  @map("created_at")
+  updatedAt   DateTime @updatedAt() @map("updated_at")
+
+
+  @@map("beritas")
 }
