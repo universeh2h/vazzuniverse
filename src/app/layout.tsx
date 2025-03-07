@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Vazzuniverse',
+  title: 'Vazzuniverse - Top up terpercaya se-universe',
   description: ' %s | Vazzuniverse',
   icons: {
     icon: URL_LOGO,

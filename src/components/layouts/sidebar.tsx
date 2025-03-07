@@ -68,7 +68,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <div
       ref={sidebarRef}
-      className={`fixed top-0 left-0 h-full w-72 text-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 h-full w-72 text-white shadow-lg z-50 transform bg-background transition-transform duration-300 ease-in-out ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
@@ -78,9 +78,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-2">
             <Image
-              src={
-                (URL_LOGO as string) || '/placeholder.svg?height=40&width=40'
-              }
+              src={URL_LOGO as string}
               height={40}
               width={40}
               alt="logo vazzuniverse"

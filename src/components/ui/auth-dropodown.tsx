@@ -32,7 +32,7 @@ export function AuthDropdown({ user }: { user?: User }) {
     <Button
       size="sm"
       variant="outline"
-      className="shadow-none text-white bg-black border-black"
+      className="shadow-none text-white bg-orange-500 border-orange-500 border hover:text-orange-500 hover:border-white"
     >
       <LogIn className="mr-2 h-4 w-4" />
       <p>Login</p>

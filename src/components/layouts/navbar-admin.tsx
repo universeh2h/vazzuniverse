@@ -44,7 +44,7 @@ export const NavbarAdmin = ({ user, children }: NavbarAdminProps) => {
         user={user}
       />
 
-      <main className="lg:pl-64 min-h-screen bg-white">{children}</main>
+      <main className="lg:pl-64 min-h-screen bg-backgorund">{children}</main>
     </div>
   );
 };
