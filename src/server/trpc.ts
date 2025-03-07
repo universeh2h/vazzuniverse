@@ -1,18 +1,15 @@
-import { initTRPC } from "@trpc/server";
-import superjson from "superjson";
+import { initTRPC } from '@trpc/server';
+import { prisma } from '@/lib/prisma';
+export async function createContext() {
+  return {
+    prisma,
+  };
+}
 
-export const t = initTRPC.create({
-    transformer: superjson,
-    // errorFormatter(opts) {
-    //     return opts.shape
-    // }
-})
+export type Context = Awaited<ReturnType<typeof createContext>>;
+// Initialize tRPC
+const t = initTRPC.context<Context>().create();
 
-
-export const appRouter = t.router({
-    hello: t.procedure.query(() => {
-        return { message : "hellow from trpc !"}
-    }),
-    
-})
-export type AppRouter = typeof appRouter;
+export const router = t.router;
+export const publicProcedure = t.procedure;
+export const middleware = t.middleware;

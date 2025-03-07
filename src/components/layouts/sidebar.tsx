@@ -68,7 +68,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <div
       ref={sidebarRef}
-      className={`fixed top-0 left-0 h-full w-72 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 h-full w-72 text-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-hidden={!open}
@@ -100,8 +100,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Sidebar content */}
-        <div className="flex-1 overflow-auto py-4">
-          <nav className="space-y-1 px-2">
+        <div className="flex-1 overflow-auto py-4 ">
+          <nav className="space-y-1 px-2 ">
             <SidebarLink href="/all" icon={<Gamepad2 className="h-4 w-4" />}>
               Semua Game
             </SidebarLink>
@@ -119,7 +119,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <div className="py-1">
               <button
                 onClick={() => setOpenCalculator(!openCalculator)}
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md hover:bg-primary/10 hover:text-primary transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md hover:bg-primary/10 hover:text-orange-500 transition-colors"
               >
                 <div className="flex items-center">
                   <Calculator className="h-4 w-4 mr-3" />
@@ -147,7 +147,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Sidebar footer */}
         <div className="p-4 border-t">
-          <Button variant="outline" className="w-full justify-start" size="sm">
+          <Button
+            variant="outline"
+            className="w-full justify-start bg-white text-black"
+            size="sm"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Keluar
           </Button>

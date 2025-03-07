@@ -44,11 +44,7 @@ export const MobileHeader = ({
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-64    bg-white ">
-        <SheetHeader
-          className="
-                flex h-14 items-center border-b px-4
-                    "
-        >
+        <SheetHeader className="flex h-14 items-center border-b px-4">
           <SheetTitle>
             <Link
               href="/dashboard"
@@ -80,13 +76,7 @@ export const MobileHeader = ({
 "
         >
           <AuthDropdown user={user} />
-          <span
-            className="
-                    text-black
-                    "
-          >
-            Admin Panel
-          </span>
+          <span className="text-black">Admin Panel</span>
         </div>
       </SheetContent>
     </Sheet>
