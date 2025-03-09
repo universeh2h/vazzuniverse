@@ -105,19 +105,12 @@ export class Digiflazz {
     }
   }
 
-  async CreateOrder(
-    uid = null,
-    zone = null,
-    service = null,
-    order_id = null,
-    target: string
-  ) {
+  async CreateOrder(service = null, order_id = null, target: string) {
     try {
       const api = {
         username_digi: this.username,
         api_key_digi: this.apiKey,
       };
-
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
       const api_postdata = {
         username: api.username_digi,
@@ -138,10 +131,7 @@ export class Digiflazz {
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
-        console.error(
-          'Error making order:',
-          error?.response?.data || error.message
-        );
+        console.error('Error making order:', error.message);
         throw error;
       }
     }
