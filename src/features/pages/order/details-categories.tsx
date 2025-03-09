@@ -5,10 +5,11 @@ import { SidebarOrder } from './sidebar';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
 import { OrderPage } from './order';
 import { Product } from '@/types/digiflazz/ml';
-import { PaymentsSection } from '../../../app/(main)/payment/payment';
 import Image from 'next/image';
 import { PlaceholderContent } from './placeholder/content';
 import { Category, SubCategories } from '@/types/category';
+import { usePlansStore } from '@/hooks/use-select-plan';
+import { PaymentsSection } from '../payment/payment';
 
 export default function DetailsCategories({ name }: { name: string }) {
   const { data, isLoading } = trpc.main.getCategoriesByName.useQuery({
@@ -18,13 +19,14 @@ export default function DetailsCategories({ name }: { name: string }) {
     game: decodeURIComponent(name),
   });
   const category = data?.categories;
+  const { selectPlans } = usePlansStore();
 
   if (isLoading) {
     return <LoadingOverlay />;
   }
   if (category === undefined || category === null) {
     return (
-      <div>
+      <div className="min-h-screen w-full justify-center items-center text-white">
         <p>category belum tersedia</p>
       </div>
     );
@@ -65,10 +67,11 @@ export default function DetailsCategories({ name }: { name: string }) {
                 plans={plans as Product[]}
                 subCategories={data?.subCategories as SubCategories[]}
               />
-              {plans && (
+
+              {selectPlans && (
                 <PaymentsSection
-                  amount={1}
-                  productDetails={plans[0].product_name as string}
+                  amount={selectPlans.price}
+                  productDetails={selectPlans}
                 />
               )}
             </div>

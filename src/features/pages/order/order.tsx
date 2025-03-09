@@ -2,8 +2,8 @@ import { Product } from '@/types/digiflazz/ml';
 import { useState, useEffect } from 'react';
 import { PlansOrder } from './plans';
 import { Button } from '@/components/ui/button';
-import { trpc } from '@/utils/trpc';
 import { SubCategories } from '@/types/category';
+import { usePlansStore } from '@/hooks/use-select-plan';
 
 interface OrderPageProps {
   plans: Product[];
@@ -13,74 +13,49 @@ interface OrderPageProps {
 export function OrderPage({ plans, subCategories }: OrderPageProps) {
   const [selectedCategory, setSelectedCategory] =
     useState<SubCategories | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { selectPlans, setSelectPlans } = usePlansStore();
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
-  // Set initial products and selected category
   useEffect(() => {
-    // Safety check to ensure plans is an array
-    if (!Array.isArray(plans)) return;
+    if (!Array.isArray(plans) || plans.length === 0) return;
 
     if (subCategories && subCategories.length > 0) {
       setSelectedCategory(subCategories[0]);
-    } else {
-      // If no subcategories, show all products sorted
-      const sortedProducts = [...plans].sort((a, b) => {
-        const numA = parseInt(a.product_name.match(/\d+/)?.[0] || '0', 10);
-        const numB = parseInt(b.product_name.match(/\d+/)?.[0] || '0', 10);
-        return numA - numB;
-      });
-      setFilteredProducts(sortedProducts);
     }
-  }, [subCategories, plans]);
 
-  // Filter products when category changes
+    const sortedProducts = [...plans].sort((a, b) => a.price - b.price);
+    setFilteredProducts(sortedProducts);
+  }, [plans, subCategories]);
+
   useEffect(() => {
-    // Safety check to ensure plans is an array
-    if (!Array.isArray(plans)) return;
+    if (!Array.isArray(plans) || plans.length === 0) return;
 
-    // If no selected category or no subcategories, show all products
     if (!selectedCategory || subCategories.length === 0) {
-      const sortedProducts = [...plans].sort((a, b) => {
-        const numA = parseInt(a.product_name.match(/\d+/)?.[0] || '0', 10);
-        const numB = parseInt(b.product_name.match(/\d+/)?.[0] || '0', 10);
-        return numA - numB;
-      });
-      setFilteredProducts(sortedProducts);
+      const allProducts = [...plans].sort((a, b) => a.price - b.price);
+      setFilteredProducts(allProducts);
       return;
     }
 
-    // Simply filter products by matching category ID
     const filtered = plans.filter((plan) => {
-      // Your products should have a way to identify which category they belong to
-      // This is a simplified example - adjust to match your data structure
-      return plan.category === selectedCategory.name;
+      return plan.buyer_sku_code.includes(selectedCategory.code);
     });
 
-    // Sort the filtered products by numeric value in product name
-    const sorted = filtered.sort((a, b) => {
-      const numA = parseInt(a.product_name.match(/\d+/)?.[0] || '0', 10);
-      const numB = parseInt(b.product_name.match(/\d+/)?.[0] || '0', 10);
-      return numA - numB;
-    });
-
+    const sorted = filtered.sort((a, b) => a.price - b.price);
     setFilteredProducts(sorted);
   }, [selectedCategory, plans, subCategories]);
 
-  // Function to handle category selection
   const handleCategoryChange = (category: SubCategories) => {
     setSelectedCategory(category);
-    setSelectedPlan(null); // Reset selected plan when category changes
+    setSelectPlans(null);
   };
 
-  // Function to handle plan selection
-  const handleSelect = (select: string) => {
-    setSelectedPlan(select);
+  const handleSelect = (select: Product) => {
+    setSelectPlans(select);
   };
 
   return (
     <div className="bg-blue-900/20 rounded-xl p-6 border border-blue-800/50 space-y-4">
-      <h2 className="text-xl font-semibold text-white mb-4">Select Package</h2>
+      <h2 className="text-xl font-semibold text-white mb-4">Pilih Package</h2>
 
       {/* Category selection - only show if subcategories exist */}
       {subCategories && subCategories.length > 0 && (
@@ -104,15 +79,15 @@ export function OrderPage({ plans, subCategories }: OrderPageProps) {
         {Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
           filteredProducts.map((plan, idx) => (
             <PlansOrder
-              key={`${plan.product_name}-${idx}`}
+              key={`${plan.buyer_sku_code}-${idx}`}
               plan={plan}
               onSelect={handleSelect}
-              isSelected={selectedPlan === plan.buyer_sku_code}
+              isSelected={selectPlans?.buyer_sku_code === plan.buyer_sku_code}
             />
           ))
         ) : (
           <p className="text-white col-span-3 text-center py-4">
-            No products available
+            No products available for this category
           </p>
         )}
       </div>

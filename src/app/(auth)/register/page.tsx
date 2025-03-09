@@ -6,13 +6,14 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { AuthPage } from '../_components/auth';
 import { useForm } from 'react-hook-form';
-import { RegisterAuth, registerSchema } from '@/types/schema/auth';
+import { type RegisterAuth, registerSchema } from '@/types/schema/auth';
 import { PasswordInput } from '@/components/ui/passwordInput';
 import CreateUser from '../_components/api';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { WhatsAppInput } from '@/components/ui/wa-input';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function RegisterPage() {
     reset,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<RegisterAuth>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -52,15 +55,14 @@ export default function RegisterPage() {
     }
   };
 
+  // Custom handler for WhatsApp input
+  const handleWhatsAppChange = (value: string) => {
+    setValue('whatsapp', value ? Number.parseInt(value) : 62);
+  };
+
   return (
     <AuthPage>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-white">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Daftar ke Akun Anda</h1>
-          <p className="text-muted-foreground mt-2">
-            Masukkan kredensial Anda untuk membuat akun Anda
-          </p>
-        </div>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
@@ -87,16 +89,15 @@ export default function RegisterPage() {
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
+            <Label htmlFor="whatsapp">WhatsApp Number</Label>
+            <WhatsAppInput
               id="whatsapp"
-              type="number"
-              placeholder="Enter WhatsApp number"
-              {...register('whatsapp')}
+              placeholder="8123456789"
+              countryCode={62}
+              value={watch('whatsapp')}
+              onChange={(e) => handleWhatsAppChange(e.target.value)}
+              error={errors.whatsapp?.message}
             />
-            {errors.whatsapp && (
-              <p className="text-sm text-red-500">{errors.whatsapp.message}</p>
-            )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">

@@ -7,40 +7,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useDuitkuPayment } from '@/hooks/use-payment';
+import { useMidtransPayment } from '@/hooks/use-payment';
+import { Method } from '@/hooks/use-select-plan';
+import { Product } from '@/types/digiflazz/ml';
 interface DialogPaymentProps {
-  productName: string;
+  product: Product;
   amount: number;
-  methodName: string;
-  code: string;
+  method: Method;
+  noWa: string;
 }
 export function DialogPayment({
-  productName,
+  product,
   amount,
-  code,
-  methodName,
+  method,
+  noWa,
 }: DialogPaymentProps) {
-  const { initiatePayment, isLoading } = useDuitkuPayment();
-
+  const payment = useMidtransPayment();
   const handlePayment = async () => {
-    if (!methodName) {
-      alert('Please select a payment method and enter your email');
-      return;
-    }
-
     try {
-      const response = await initiatePayment({
-        paymentAmount: amount * parseInt('20000'),
-        productDetails: productName,
-        email: 'wafiwafiwafi90@gmail.com',
-        paymentMethod: code,
+      const response = await payment.initiatePayment({
+        amount: amount,
+        noWa,
+        paymentMethod: 'gopay',
+        productName: product.product_name,
       });
-
-      if (response.paymentUrl) {
-        window.location.href = response.paymentUrl;
-      } else {
-        alert(`Payment error: ${response.statusMessage}`);
-      }
+      console.log(response);
     } catch (err) {
       console.error('Payment error:', err);
       alert('Failed to initiate payment. Please try again.');
@@ -60,15 +51,15 @@ export function DialogPayment({
           </DialogTitle>
           <DialogDescription className="flex flex-col gap-2">
             <span className="text-blue-300">
-              You&apos;ve selected {methodName}
+              You&apos;ve selected {method.name}
             </span>
             <span className="text-blue-300 mt-2">
               Amount to pay: Rp {amount.toLocaleString()}
             </span>
           </DialogDescription>
         </DialogHeader>
-        <Button onClick={handlePayment} disabled={isLoading}>
-          {isLoading ? 'Processing...' : 'Bayar'}
+        <Button onClick={handlePayment}>
+          {/* {isLoading ? 'Processing...' : 'Bayar'} */}
         </Button>
       </DialogContent>
     </Dialog>

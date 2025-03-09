@@ -17,9 +17,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Vazzuniverse - Top up terpercaya se-universe',
-  description: ' %s | Vazzuniverse',
+  description: ' %s | Vazzuniverse - Top up terpercaya se-universe',
   icons: {
     icon: URL_LOGO,
+  },
+  twitter: {
+    site: 'Top Up Terpecaya se-Universe',
   },
 };
 

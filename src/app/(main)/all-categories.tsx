@@ -24,10 +24,9 @@ export default function AllCategories({ type }: { type: string }) {
     trpc.main.getCategoriesActive.useQuery({
       page: page.toString(),
       perPage: '10',
-      type: type, // Pass the type to your API query
+      type: type,
     });
 
-  // Filter and update categories when data changes
   useEffect(() => {
     if (data) {
       if (data.data.length === 0) {
@@ -50,7 +49,6 @@ export default function AllCategories({ type }: { type: string }) {
     }
   }, [data, page, type]);
 
-  // Fetch next page only when not already loading
   useEffect(() => {
     const options = {
       root: null,
@@ -82,7 +80,7 @@ export default function AllCategories({ type }: { type: string }) {
         <SkeletonCardCategories count={10} />
       ) : (
         <>
-          <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {allCategories.map((category, index) => (
               <Link
                 href={`/order/${category.kode}`}

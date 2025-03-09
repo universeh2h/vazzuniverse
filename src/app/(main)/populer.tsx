@@ -1,15 +1,23 @@
 'use client';
+import PopularSkeleton from '@/components/ui/popular-skeleton';
 import { trpc } from '@/utils/trpc';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function PopularSection() {
-  const { data } = trpc.main.getCategoriesPopular.useQuery();
+  const { data, isLoading } = trpc.main.getCategoriesPopular.useQuery();
 
+  // Jika sedang loading, tampilkan skeleton loader
+  if (isLoading) {
+    return <PopularSkeleton />;
+  }
+
+  // Jika tidak ada data, kembalikan null
   if (!data || data.length === 0) {
     return null;
   }
 
+  // Render data jika sudah tersedia
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-white">Popular</h2>

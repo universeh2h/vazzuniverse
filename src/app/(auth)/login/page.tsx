@@ -60,13 +60,6 @@ export default function LoginPage() {
   return (
     <AuthPage>
       <form className="space-y-4 text-white" onSubmit={handleSubmit(onSubmit)}>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Login to Your Account</h1>
-          <p className="text-muted-foreground mt-2">
-            Enter your credentials to access your account
-          </p>
-        </div>
-
         {loginError && (
           <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded">
             {loginError}

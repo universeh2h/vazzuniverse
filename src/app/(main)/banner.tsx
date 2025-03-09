@@ -9,6 +9,8 @@ export function BannerSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
+  const backgroundUrl =
+    'https://res.cloudinary.com/dstvymie8/image/upload/v1741104865/download_1_bzlrrj.webp';
 
   useEffect(() => {
     if (!autoplay || !bannerQuery.data?.data?.length) return;
@@ -55,33 +57,52 @@ export function BannerSlider() {
   };
 
   return (
-    <div className="relative w-full h-64 md:h-96 overflow-hidden">
-      {/* Slider */}
-      <div className="relative w-full h-full">
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
-            }}
-            className="absolute w-full h-full"
-          >
-            <Image
-              width={1000}
-              height={200}
-              src={bannerQuery.data?.data[currentIndex]?.path}
-              alt={`Banner ${currentIndex + 1}`}
-              className="w-full h-full  rounded-md sm:bg-cover
+    <div
+      className="relative w-full py-8 rounded-lg overflow-hidden"
+      style={{
+        backgroundImage: `url(${backgroundUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30"></div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-full">
+        <div className="relative h-full flex items-center z-10">
+          <div className="relative w-full h-64 md:h-96 overflow-hidden">
+            {/* Slider */}
+            <div className="relative w-full h-full">
+              <AnimatePresence
+                initial={false}
+                custom={direction}
+                mode="popLayout"
+              >
+                <motion.div
+                  key={currentIndex}
+                  custom={direction}
+                  variants={variants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: 'spring', stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 },
+                  }}
+                  className="absolute w-full h-full"
+                >
+                  <Image
+                    width={1000}
+                    height={200}
+                    src={bannerQuery.data?.data[currentIndex]?.path}
+                    alt={`Banner ${currentIndex + 1}`}
+                    className="w-full h-full  rounded-md sm:bg-cover
               "
-            />
-          </motion.div>
-        </AnimatePresence>
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

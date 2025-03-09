@@ -11,27 +11,14 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   username: z.string(),
   name: z.string(),
-  whatsapp: z
-    .string()
-    .transform((val) => {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) ? null : parsed;
-    })
-    .refine((val) => val !== null, { message: 'Invalid WhatsApp number' }),
-
+  whatsapp: z.number(),
   password: passwordSchema,
 });
 
 export const updateUser = z.object({
   username: z.string(),
   name: z.string(),
-  whatsapp: z
-    .string()
-    .transform((val) => {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) ? null : parsed;
-    })
-    .refine((val) => val !== null, { message: 'Invalid WhatsApp number' }),
+  whatsapp: z.number(),
 });
 export type loginAuth = z.infer<typeof loginSchema>;
 export type RegisterAuth = z.infer<typeof registerSchema>;

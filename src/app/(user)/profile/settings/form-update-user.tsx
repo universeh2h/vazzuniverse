@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { UpdateUser } from '@/types/schema/auth';
 import { UpdateUsers } from '@/app/(auth)/_components/api';
 import { toast } from 'sonner';
+import { WhatsAppInput } from '@/components/ui/wa-input';
 
 export function FormUpdateUser({ user }: { user: User }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -16,6 +17,8 @@ export function FormUpdateUser({ user }: { user: User }) {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<UpdateUser>({
     defaultValues: {
@@ -35,17 +38,19 @@ export function FormUpdateUser({ user }: { user: User }) {
         toast.success(result.message);
         setTimeout(() => setUpdateSuccess(false), 3000);
       } else {
-        // Add this to display error messages from the API
         toast.error(result.message);
       }
     } catch (error) {
-      // This catches network/unexpected errors
       toast.error(
         error instanceof Error ? error.message : 'Error updating profile'
       );
     } finally {
       setIsSubmitting(false);
     }
+  };
+  // Custom handler for WhatsApp input
+  const handleWhatsAppChange = (value: string) => {
+    setValue('whatsapp', value ? Number.parseInt(value) : 62);
   };
 
   return (
@@ -71,12 +76,14 @@ export function FormUpdateUser({ user }: { user: User }) {
 
       <div className="space-y-2">
         <Label htmlFor="whatsapp">WhatsApp Number</Label>
-        <Input id="whatsapp" {...register('whatsapp')} type="number" />
-        {errors.whatsapp && (
-          <p className="text-sm text-red-500">
-            {errors.whatsapp.message?.toString()}
-          </p>
-        )}
+        <WhatsAppInput
+          id="whatsapp"
+          placeholder="8123456789"
+          countryCode={62}
+          value={watch('whatsapp')}
+          onChange={(e) => handleWhatsAppChange(e.target.value)}
+          error={errors.whatsapp?.message}
+        />
       </div>
 
       {updateSuccess && (

@@ -1,5 +1,5 @@
 'use client';
-import { type JSX, useState } from 'react';
+import { type JSX, useState, useEffect } from 'react';
 import { trpc } from '@/utils/trpc';
 import Image from 'next/image';
 import type { PaymentMethod } from '@/types/payment';
@@ -9,15 +9,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Card, CardContent } from '@/components/ui/card';
 import { CreditCard, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { typeIcons, typeLabels } from '@/hooks/use-payment';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePlansStore } from '@/hooks/use-select-plan';
+import { FormatPrice } from '@/utils/formatPrice';
+import { Product } from '@/types/digiflazz/ml';
+import { toast } from 'sonner';
 import { DialogPayment } from './dialog-payment';
 
-const MotionCard = motion(Card);
+const MotionPaymentOption = motion.div;
 const MotionAccordionContent = motion(AccordionContent);
 
 export function PaymentsSection({
@@ -25,12 +28,46 @@ export function PaymentsSection({
   productDetails,
 }: {
   amount: number;
-  productDetails: string;
+  productDetails: Product;
 }): JSX.Element {
   const { data: methods } = trpc.methods.getMethods.useQuery();
-  const [selectedMethod, setSelectedMethod] = useState<number | null>(null);
-  const [whatsapp, setWhatsapp] = useState<string>('');
+  const { noWa, setNowa, selectPayment, setSelectPayment } = usePlansStore();
   const [expandedType, setExpandedType] = useState<string | null>(null);
+
+  // Show toast if amount is missing
+  useEffect(() => {
+    if (!amount) {
+      toast.error('Silakan pilih paket terlebih dahulu', {
+        description:
+          'Anda harus memilih paket sebelum melanjutkan ke pembayaran',
+        duration: 3000,
+      });
+    }
+  }, [amount]);
+
+  if (!amount) {
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full mx-auto p-6 bg-[#001435] border-2 border-blue-900 rounded-2xl mt-5 space-y-6 shadow-lg"
+      >
+        <div className="text-center py-8">
+          <div className="mb-4 text-blue-300">
+            <CreditCard className="mx-auto h-12 w-12 opacity-50" />
+          </div>
+          <h3 className="text-xl font-medium text-blue-100 mb-2">
+            Pilih Paket Terlebih Dahulu
+          </h3>
+          <p className="text-blue-300 max-w-md mx-auto">
+            Anda perlu memilih paket dari daftar yang tersedia sebelum dapat
+            melihat metode pembayaran.
+          </p>
+        </div>
+      </motion.section>
+    );
+  }
 
   const groupedMethods =
     methods?.data.reduce((acc, method) => {
@@ -44,12 +81,13 @@ export function PaymentsSection({
 
   const paymentTypes = Object.keys(groupedMethods);
 
-  const handleSelectMethod = (id: number) => {
-    setSelectedMethod(id === selectedMethod ? null : id);
+  const handleSelectMethod = (method: PaymentMethod) => {
+    setSelectPayment({
+      code: method.code,
+      price: amount,
+      name: method.name,
+    });
   };
-
-  const paymentName = methods?.data.find((m) => m.id === selectedMethod)?.name;
-  const paymentCode = methods?.data.find((m) => m.id === selectedMethod)?.code;
 
   return (
     <motion.section
@@ -89,10 +127,10 @@ export function PaymentsSection({
           No Whatsapp
         </label>
         <Input
-          type="text"
+          type="number"
           id="whatsapp"
-          value={whatsapp}
-          onChange={(e) => setWhatsapp(e.target.value)}
+          value={noWa || ''}
+          onChange={(e) => setNowa(e.target.value)}
           placeholder="Enter your no whatsapp"
           className="w-full px-4 py-3 rounded-md bg-blue-950 border border-blue-800 text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
           required
@@ -129,6 +167,9 @@ export function PaymentsSection({
                   <span className="font-medium">
                     {typeLabels[type] || type}
                   </span>
+                  <span>
+                    {FormatPrice((selectPayment?.price as number) || amount)}
+                  </span>
                 </motion.div>
               </AccordionTrigger>
 
@@ -140,21 +181,21 @@ export function PaymentsSection({
                 transition={{ duration: 0.3 }}
               >
                 <motion.div
-                  className="grid grid-cols-2 md:grid-cols-3 gap-3"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
                 >
                   <AnimatePresence>
                     {groupedMethods[type].map((method) => (
-                      <MotionCard
+                      <MotionPaymentOption
                         key={method.id}
                         className={cn(
-                          'cursor-pointer border border-blue-800 hover:border-blue-400 rounded-lg w-full h-auto overflow-hidden relative',
-                          selectedMethod === method.id &&
+                          'cursor-pointer border border-blue-800 hover:border-blue-400 rounded-lg w-full h-24 overflow-hidden relative bg-blue-950/20',
+                          selectPayment?.code === method.code &&
                             'border-blue-400 bg-blue-900/30'
                         )}
-                        onClick={() => handleSelectMethod(method.id)}
+                        onClick={() => handleSelectMethod(method)}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         whileHover={{
@@ -168,40 +209,38 @@ export function PaymentsSection({
                           damping: 17,
                         }}
                       >
-                        <CardContent className="h-full flex flex-col p-3">
-                          <div className="flex flex-col h-full">
-                            <motion.div
-                              className="flex-grow flex items-center justify-center py-2"
-                              initial={{ y: 10, opacity: 0 }}
-                              animate={{ y: 0, opacity: 1 }}
-                              transition={{ delay: 0.1 }}
-                            >
-                              <Image
-                                width={300}
-                                height={300}
-                                src={method.images || '/placeholder.svg'}
-                                alt={method.name}
-                                className="size-16 object-contain"
-                              />
-                            </motion.div>
-                            <motion.div
-                              className="text-center space-y-1 mt-1"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.2 }}
-                            >
-                              <p className="text-sm  font-medium text-blue-900">
-                                {method.name}
+                        <div className="h-full flex flex-row items-center p-3">
+                          <motion.div
+                            className="flex-shrink-0 flex items-center justify-center mr-3"
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <Image
+                              width={300}
+                              height={300}
+                              src={method.images}
+                              alt={method.name}
+                              className="size-12 object-contain"
+                            />
+                          </motion.div>
+                          <motion.div
+                            className="flex-grow space-y-1"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                          >
+                            <p className="text-sm font-medium text-blue-100">
+                              {method.name}
+                            </p>
+                            {method.keterangan && (
+                              <p className="text-xs text-blue-300">
+                                {method.keterangan}
                               </p>
-                              {method.keterangan && (
-                                <p className="text-xs text-blue-300">
-                                  {method.keterangan}
-                                </p>
-                              )}
-                            </motion.div>
-                          </div>
+                            )}
+                          </motion.div>
 
-                          {selectedMethod === method.id && (
+                          {selectPayment?.code === method.code && (
                             <motion.div
                               className="absolute top-2 right-2"
                               initial={{ scale: 0, opacity: 0 }}
@@ -212,8 +251,8 @@ export function PaymentsSection({
                               <CheckCircle2 className="h-5 w-5 text-blue-400" />
                             </motion.div>
                           )}
-                        </CardContent>
-                      </MotionCard>
+                        </div>
+                      </MotionPaymentOption>
                     ))}
                   </AnimatePresence>
                 </motion.div>
@@ -222,9 +261,8 @@ export function PaymentsSection({
           </motion.div>
         ))}
       </Accordion>
-
       <AnimatePresence>
-        {selectedMethod && (
+        {selectPayment && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -232,10 +270,10 @@ export function PaymentsSection({
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
             <DialogPayment
+              noWa={noWa?.toString() || ''}
               amount={amount}
-              productName={productDetails}
-              methodName={paymentName as string}
-              code={paymentCode as string}
+              product={productDetails}
+              method={selectPayment}
             />
           </motion.div>
         )}
