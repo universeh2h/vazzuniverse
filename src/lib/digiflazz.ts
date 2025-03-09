@@ -1,3 +1,4 @@
+import { Product } from '@/types/digiflazz/ml';
 import axios, { AxiosError } from 'axios';
 import crypto from 'crypto';
 
@@ -10,7 +11,7 @@ export class Digiflazz {
     this.apiKey = apiKey;
   }
 
-  async checkPrice() {
+  async checkPrice(): Promise<Product[]> {
     try {
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
 

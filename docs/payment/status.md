@@ -14,3 +14,4 @@
 > - **settlement** → Produk bisa langsung dikirim ke user.
 > - **pending** → Tunggu user melakukan pembayaran.
 > - **expire** / **cancel** → Transaksi gagal, perlu order ulang.
+> - **harga_platinum** -> hargaa platinum dikurangi 1%

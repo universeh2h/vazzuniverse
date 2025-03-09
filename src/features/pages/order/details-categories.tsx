@@ -13,11 +13,15 @@ import { PaymentsSection } from '../payment/payment';
 
 export default function DetailsCategories({ name }: { name: string }) {
   const { data, isLoading } = trpc.main.getCategoriesByName.useQuery({
-    name: name,
+    kode: name,
   });
-  const { data: plans } = trpc.digiflazz.getProductsByGame.useQuery({
-    game: decodeURIComponent(name),
+
+  const { data: plans } = trpc.layanans.getLayananByCategory.useQuery({
+    category: name,
   });
+  console.log(name);
+  console.log(plans);
+
   const category = data?.categories;
   const { selectPlans } = usePlansStore();
 
@@ -63,10 +67,10 @@ export default function DetailsCategories({ name }: { name: string }) {
               <PlaceholderContent category={category as Category} />
             </div>
             <div>
-              <OrderPage
-                plans={plans as Product[]}
+              {/* <OrderPage
+                plans={plans.data as Product[]}
                 subCategories={data?.subCategories as SubCategories[]}
-              />
+              /> */}
 
               {selectPlans && (
                 <PaymentsSection

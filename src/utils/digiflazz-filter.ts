@@ -15,12 +15,6 @@ export function filterProductsByGame(
     const categoryLower = product.category?.toLowerCase() || '';
     const skuCodeLower = product.buyer_sku_code.toLowerCase();
 
-    if (
-      productNameLower.includes(formattedGameName) ||
-      (skuCode && skuCodeLower.includes(skuCode))
-    ) {
-      return true;
-    }
     if (brandLower === formattedGameName) {
       return true;
     }
