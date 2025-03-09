@@ -11,24 +11,12 @@ export const digiflazz = router({
         game: z.string(),
       })
     )
-    .query(async ({ input }): Promise<Product[]> => {
+    .query(async ({ ctx, input }): Promise<Product[]> => {
       const username = process.env.DIGI_USERNAME as string;
       const apiKey = process.env.DIGI_API_KEY as string;
       const digiflazz = new Digiflazz(username, apiKey);
-
       try {
         // Get the full price list
-        const result = await digiflazz.checkPrice();
-
-        if (result && result.data) {
-          const filteredProducts = filterProductsByGame(
-            result.data,
-            input.game
-          );
-          return filteredProducts;
-        }
-
-        return [];
       } catch (priceError) {
         try {
           const prepaidResult = await digiflazz.checkPricePrepaid();

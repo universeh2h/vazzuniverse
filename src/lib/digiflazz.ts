@@ -1,3 +1,4 @@
+import { Product } from '@/types/digiflazz/ml';
 import axios, { AxiosError } from 'axios';
 import crypto from 'crypto';
 
@@ -10,7 +11,7 @@ export class Digiflazz {
     this.apiKey = apiKey;
   }
 
-  async checkPrice() {
+  async checkPrice(): Promise<Product[]> {
     try {
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
 
@@ -105,13 +106,7 @@ export class Digiflazz {
     }
   }
 
-  async CreateOrder(
-    uid = null,
-    zone = null,
-    service = null,
-    order_id = null,
-    target: string
-  ) {
+  async CreateOrder(service = null, order_id = null, target: string) {
     try {
       const api = {
         username_digi: this.username,
@@ -138,10 +133,7 @@ export class Digiflazz {
       return response.data;
     } catch (error) {
       if (error instanceof Error) {
-        console.error(
-          'Error making order:',
-          error?.response?.data || error.message
-        );
+        console.error('Error making order:', error.message);
         throw error;
       }
     }

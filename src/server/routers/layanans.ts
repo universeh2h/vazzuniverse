@@ -16,7 +16,6 @@ export const Layanans = router({
       try {
         const skip = (input.page - 1) * input.perPage;
 
-        // Build filter conditions
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const where: any = {};
 
@@ -79,6 +78,46 @@ export const Layanans = router({
             pageCount: 0,
           },
         };
+      }
+    }),
+
+  getLayananByCategory: publicProcedure
+    .input(
+      z.object({
+        category: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const category = await ctx.prisma.categories.findFirst({
+          where: { kode: input.category },
+        });
+        const subCategories = await ctx.prisma.subCategories.findMany({
+          where: {
+            categoriesId: category?.id,
+          },
+        });
+        const data = await ctx.prisma.layanan.findMany({
+          where: {
+            kategoriId: category?.id.toString(),
+          },
+          select: {
+            layanan: true,
+            harga: true,
+          },
+          orderBy: {
+            harga: 'asc',
+          },
+        });
+        return {
+          layanan: data,
+          subCategories,
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('error : ', error.message);
+        }
+        console.error('error fetching layanans');
       }
     }),
 });

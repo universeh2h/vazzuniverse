@@ -17,14 +17,14 @@ export const mainRouter = router({
   getCategoriesByName: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        kode: z.string(),
       })
     )
     .query(async ({ ctx, input }) => {
       try {
         const categories = await ctx.prisma.categories.findFirst({
           where: {
-            kode: input.name,
+            kode: input.kode,
           },
         });
 
