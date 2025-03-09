@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -79,7 +74,7 @@ model Categories  {
   name            String  @map("nama")
   subName         String  @map("sub_nama")
   brand           String
-  kode            String?
+  kode            String?  
   serverId        Int  @map("server_id")
   status  String
   thumbnail   String
@@ -93,7 +88,22 @@ model Categories  {
   updatedAt   DateTime  @updatedAt  @map("updated_at")
   bannerLayanan   String   @map("bannerlayanan")
 
+  @@index([kode,name])
   @@map("kategoris")
+}
+
+
+model SubCategories  {
+  id  Int  @id @default(autoincrement())
+  categoriesId  Int  @map("category_id")
+  name  String
+  code String  @map("code")
+  active  Boolean  @map("active")
+  createdAt   DateTime  @default(now())  @map("created_at")
+  updatedAt  DateTime  @updatedAt  @map("updated_at")
+
+@@map("sub_categories")
+  @@index([categoriesId])
 }
 
 model  Berita  {
@@ -107,3 +117,16 @@ model  Berita  {
 
   @@map("beritas")
 }
+
+
+model Methods  {
+  id Int  @id  @default(autoincrement())
+  name String
+  images String
+  code  String  @db.VarChar(50)
+  keterangan  String
+  type  String   @map("tipe")
+  createdAt   DateTime   @default(now())  @map("created_at")
+  updatedAt   DateTime  @default(now())  @map("updated_at")
+}
+

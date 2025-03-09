@@ -13,14 +13,21 @@ export default function AllCategories({ type }: { type: string }) {
   const [hasMore, setHasMore] = useState(true);
   const loader = useRef<HTMLDivElement>(null);
 
+  // Reset pagination when type changes
+  useEffect(() => {
+    setPage(1);
+    setAllCategories([]);
+    setHasMore(true);
+  }, [type]);
+
   const { data, isLoading, isFetching } =
     trpc.main.getCategoriesActive.useQuery({
-      type,
       page: page.toString(),
       perPage: '10',
+      type: type, // Pass the type to your API query
     });
 
-  // Handle data updates with useEffect instead of onSuccess
+  // Filter and update categories when data changes
   useEffect(() => {
     if (data) {
       if (data.data.length === 0) {
@@ -28,15 +35,20 @@ export default function AllCategories({ type }: { type: string }) {
         return;
       }
 
+      // Filter categories by the selected type
+      const filteredData = data.data.filter((category) =>
+        type === 'all' ? true : category.type === type
+      );
+
       if (page === 1) {
-        setAllCategories(data.data);
+        setAllCategories(filteredData);
       } else {
-        setAllCategories((prev) => [...prev, ...data.data]);
+        setAllCategories((prev) => [...prev, ...filteredData]);
       }
 
       setHasMore(data.meta.hasNextPage);
     }
-  }, [data, page]);
+  }, [data, page, type]);
 
   // Fetch next page only when not already loading
   useEffect(() => {
@@ -73,9 +85,9 @@ export default function AllCategories({ type }: { type: string }) {
           <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {allCategories.map((category, index) => (
               <Link
-                href={`/categories/${category.name}`}
-                key={category.id || index}
-                className="group relative rounded-xl overflow-hidden  transition-all duration-300 hover:shadow-xl hover:shadow-primary/10"
+                href={`/order/${category.kode}`}
+                key={`${category.name}-${index}`}
+                className="group relative rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10"
               >
                 {/* Card with image as background and text overlay */}
                 <div className="relative aspect-square overflow-hidden">
@@ -106,7 +118,7 @@ export default function AllCategories({ type }: { type: string }) {
                     {/* Bottom section with action button */}
                     <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                       <span className="inline-flex items-center gap-1 bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
-                        Explore <ArrowRight className="h-3.5 w-3.5" />
+                        Beli Sekarang <ArrowRight className="h-3.5 w-3.5" />
                       </span>
                     </div>
                   </div>

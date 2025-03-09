@@ -3,29 +3,36 @@ import { Digiflazz } from '@/lib/digiflazz';
 
 export async function GET() {
   try {
-    // Get credentials from environment variables
     const username = process.env.DIGI_USERNAME as string;
     const apiKey = process.env.DIGI_API_KEY as string;
-
-    console.log('Using Digiflazz credentials:', {
-      username,
-      apiKey: apiKey.slice(0, 5) + '...',
-    });
-
-    // Create a new instance of Digiflazz class with authentication
     const digiflazz = new Digiflazz(username, apiKey);
 
     try {
+      // Get the full price list
       const result = await digiflazz.checkPrice();
+
+      // Filter only Mobile Legends products
+      if (result && result.data) {
+        return NextResponse.json({
+          status: result.status,
+          data: result.data,
+        });
+      }
+
       return NextResponse.json(result);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (priceError) {
-      console.log(
-        'First price check method failed, trying alternative...',
-        priceError
-      );
       try {
-        // If that fails, try the prepaid method
         const prepaidResult = await digiflazz.checkPricePrepaid();
+
+        // Filter only Mobile Legends products from prepaid result
+        if (prepaidResult && prepaidResult.data) {
+          return NextResponse.json({
+            status: prepaidResult.status,
+            data: prepaidResult.data,
+          });
+        }
+
         return NextResponse.json(prepaidResult);
       } catch (prepaidError) {
         console.log(

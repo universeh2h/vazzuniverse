@@ -17,3 +17,13 @@ export type Category = {
   updatedAt: string;
   bannerLayanan: string;
 };
+
+export type SubCategories = {
+  name: string;
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  code: string;
+  categoriesId: number;
+  active: boolean;
+};

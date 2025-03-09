@@ -15,15 +15,10 @@ export class Digiflazz {
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
 
       const payload = {
-        cmd: 'pricelist-pasca',
+        cmd: 'pricelist',
         username: this.username,
         sign: sign,
       };
-
-      console.log(
-        'Sending request to Digiflazz with payload:',
-        JSON.stringify(payload)
-      );
 
       const response = await axios({
         method: 'POST',
@@ -39,7 +34,6 @@ export class Digiflazz {
       if (error instanceof Error) {
         console.error('Digiflazz price check error:', error.message);
 
-        // Check if it's an Axios error with a response
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError;
           if (axiosError.response) {
@@ -50,10 +44,8 @@ export class Digiflazz {
             console.error('Response status:', axiosError.response.status);
             console.error('Response headers:', axiosError.response.headers);
           } else if (axiosError.request) {
-            // The request was made but no response was received
             console.error('No response received:', axiosError.request);
           } else {
-            // Something happened in setting up the request
             console.error('Error setting up request:', axiosError.message);
           }
           console.error('Error config:', axiosError.config);
@@ -65,13 +57,12 @@ export class Digiflazz {
     }
   }
 
-  // Alternative method to try different endpoints
   async checkPricePrepaid() {
     try {
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
 
       const payload = {
-        cmd: 'pricelist', // standard prepaid endpoint
+        cmd: 'pricelist',
         username: this.username,
         sign: sign,
       };
@@ -101,10 +92,8 @@ export class Digiflazz {
             console.error('Response status:', axiosError.response.status);
             console.error('Response headers:', axiosError.response.headers);
           } else if (axiosError.request) {
-            // The request was made but no response was received
             console.error('No response received:', axiosError.request);
           } else {
-            // Something happened in setting up the request
             console.error('Error setting up request:', axiosError.message);
           }
           console.error('Error config:', axiosError.config);
@@ -116,7 +105,6 @@ export class Digiflazz {
     }
   }
 
-  // Method to check deposit balance
   async checkDeposit() {
     try {
       const sign = crypto

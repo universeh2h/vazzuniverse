@@ -1,7 +1,6 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 export const mainRouter = router({
-  // Get banners
   getBanners: publicProcedure.query(async ({ ctx }) => {
     try {
       const banners = await ctx.prisma.berita.findMany();
@@ -15,6 +14,34 @@ export const mainRouter = router({
       throw new Error('Failed to fetch banners');
     }
   }),
+  getCategoriesByName: publicProcedure
+    .input(
+      z.object({
+        name: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const categories = await ctx.prisma.categories.findFirst({
+          where: {
+            kode: input.name,
+          },
+        });
+
+        const subCategories = await ctx.prisma.subCategories.findMany({
+          where: {
+            categoriesId: categories?.id,
+          },
+        });
+
+        return { categories, subCategories };
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
+        throw new Error('Failed to fetch  categories');
+      }
+    }),
   getCategoriesType: publicProcedure.query(async ({ ctx }) => {
     try {
       return await ctx.prisma.categories.findMany({
@@ -39,7 +66,6 @@ export const mainRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        // Calculate skip value based on page and perPage
         const skip = (input.page - 1) * input.perPage;
 
         // Get paginated data

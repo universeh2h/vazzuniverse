@@ -20,7 +20,7 @@ export function BannerSlider() {
           ? 0
           : prevIndex + 1
       );
-    }, 5000); // Change slide every 5 seconds
+    }, 5000); // ganti slide setiap 5 menit
 
     return () => clearInterval(interval);
   }, [autoplay, bannerQuery.data?.data?.length]);

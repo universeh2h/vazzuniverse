@@ -7,7 +7,6 @@ export async function createContext() {
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>;
-// Initialize tRPC
 const t = initTRPC.context<Context>().create();
 
 export const router = t.router;

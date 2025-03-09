@@ -43,7 +43,6 @@ export function Navbar({ user }: { user?: User }) {
               </h1>
             </Link>
           </div>
-          {/* auth dropdown */}
           <AuthDropdown user={user} />
         </div>
       </nav>

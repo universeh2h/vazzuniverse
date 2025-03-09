@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 interface CategoryTypeSelectorProps {
   initialType?: string;
-  onTypeChange?: (type: string) => void;
+  onTypeChange: (type: string) => void;
   className?: string;
 }
 
@@ -23,14 +23,13 @@ export function CategoryTypeSelector({
 
   const handleTypeChange = (type: string) => {
     setCategoryType(type);
-    if (onTypeChange) {
-      onTypeChange(type);
-    }
+    onTypeChange(type);
   };
 
   useEffect(() => {
     if (initialType !== categoryType) {
       setCategoryType(initialType);
+      onTypeChange(categoryType);
     }
   }, [initialType, categoryType]);
 
