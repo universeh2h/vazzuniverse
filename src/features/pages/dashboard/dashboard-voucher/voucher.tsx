@@ -6,15 +6,12 @@ import { trpc } from '@/utils/trpc';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Copy, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
+import { VoucherCards } from './voucher-cards';
 
 export function VoucherPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,10 +31,6 @@ export function VoucherPage() {
   const { data, isLoading } = trpc.voucher.getAll.useQuery({
     code: debouncedSearchTerm,
   });
-
-  const copyToClipboard = (code: string) => {
-    navigator.clipboard.writeText(code);
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -68,45 +61,7 @@ export function VoucherPage() {
         ) : data && data.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.map((voucher) => (
-              <Card
-                key={voucher.id}
-                className="border hover:shadow-md transition-shadow"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{voucher.code}</CardTitle>
-                    <Badge variant={voucher.isActive ? 'default' : 'outline'}>
-                      {voucher.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  <CardDescription>{voucher.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted p-3 rounded-md flex items-center justify-between mb-2">
-                    <div className="font-mono font-bold text-lg">
-                      {voucher.code}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(voucher.code)}
-                      title="Copy code"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {voucher.discountValue} % off • Expires:{' '}
-                    {new Date(voucher.expiryDate).toLocaleDateString()}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Badge variant="outline">{voucher.discountType}</Badge>
-                  <Button variant="default" size="sm">
-                    Use Voucher
-                  </Button>
-                </CardFooter>
-              </Card>
+              <VoucherCards key={voucher.id} voucher={voucher} />
             ))}
           </div>
         ) : (

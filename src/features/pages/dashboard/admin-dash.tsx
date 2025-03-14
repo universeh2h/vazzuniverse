@@ -225,7 +225,7 @@ export default function DashboardAdminPage() {
           <DataTable status="failed" />
         </TabsContent>
         <TabsContent value="invoices" className="mt-4">
-          <DataTable showInvoices={true} />
+          <DataTable />
         </TabsContent>
       </Tabs>
 

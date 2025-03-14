@@ -35,15 +35,68 @@ export const voucher = router({
     .input(createVoucherSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await ctx.prisma.voucher.create({
+        const parsedInput = {
+          ...input,
+          startDate:
+            input.startDate instanceof Date
+              ? input.startDate
+              : new Date(input.startDate),
+          expiryDate:
+            input.expiryDate instanceof Date
+              ? input.expiryDate
+              : new Date(input.expiryDate),
+        };
+        const {
+          code,
+          discountType,
+          discountValue,
+          expiryDate,
+          isActive,
+          isForAllCategories,
+          startDate,
+          categoryIds,
+          description,
+          maxDiscount,
+          minPurchase,
+          usageLimit,
+        } = parsedInput;
+
+        const data = await ctx.prisma.voucher.create({
           data: {
-            ...input,
+            code,
+            discountType,
+            discountValue,
+            expiryDate,
+            isActive,
+            maxDiscount,
+            description,
+            startDate,
+            isForAllCategories,
+            usageLimit,
+            minPurchase,
           },
         });
+
+        if (categoryIds) {
+          const categoryId = Promise.all(
+            categoryIds.map(async (p) => {
+              await ctx.prisma.voucherCategory.create({
+                data: {
+                  categoryId: p,
+                  voucherId: data.id,
+                },
+              });
+            })
+          );
+
+          return categoryId;
+        }
+        return data;
       } catch (error) {
         if (error instanceof TRPCError) {
           console.error(error.message);
         }
+        console.log(error);
         throw error;
       }
     }),

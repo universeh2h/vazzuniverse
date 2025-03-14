@@ -36,8 +36,14 @@ export const voucherSchema = z.object({
     .default(0),
   isForAllCategories: z.boolean().default(false),
   isActive: z.boolean().default(true),
-  startDate: z.date().default(() => new Date()),
-  expiryDate: z.date(),
+  startDate: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
+  expiryDate: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
   description: z
     .string()
     .max(500, 'Description must be 500 characters or less')
