@@ -244,4 +244,45 @@ export const Layanans = router({
         console.error('error fetching layanans');
       }
     }),
+  getLayananByCategoryId: publicProcedure
+    .input(
+      z.object({
+        category: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const category = await ctx.prisma.categories.findFirst({
+          where: { id: parseInt(input.category) },
+        });
+
+        if (!category) {
+          throw new Error('failed to create category');
+        }
+
+        const data = await ctx.prisma.layanan.findMany({
+          where: {
+            kategoriId: category?.id.toString(),
+          },
+          select: {
+            layanan: true,
+            providerId: true,
+            subCategoryId: true,
+            harga: true,
+            id: true,
+          },
+          orderBy: {
+            harga: 'asc',
+          },
+        });
+        return {
+          layanan: data,
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('error : ', error.message);
+        }
+        console.error('error fetching layanans');
+      }
+    }),
 });

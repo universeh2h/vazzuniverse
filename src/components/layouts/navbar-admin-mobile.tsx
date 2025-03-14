@@ -35,7 +35,7 @@ export const MobileHeader = ({
   isActive,
   isChildActive,
 }: MobileHeaderProps) => (
-  <div className="flex lg:hidden h-14 items-center justify-between border-b px-4 sticky top-0 z-30 bg-white         ">
+  <div className="flex lg:hidden h-14 items-center justify-between border-b px-4 sticky top-0 z-30  bg-background        ">
     <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden">
@@ -43,7 +43,7 @@ export const MobileHeader = ({
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="p-0 w-64    bg-white ">
+      <SheetContent side="left" className="p-0 w-64  ">
         <SheetHeader className="flex h-14 items-center border-b px-4">
           <SheetTitle>
             <Link

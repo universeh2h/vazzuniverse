@@ -20,35 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Category } from '@/types/category';
+import { FormatPrice } from '@/utils/formatPrice';
 import { trpc } from '@/utils/trpc';
-import axios from 'axios';
-import { Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
-
-interface Category {
-  id: number;
-  kode: string;
-  name: string;
-}
+import { Loader2 } from 'lucide-react';
+import { ReactNode, useState } from 'react';
+import { toast } from 'sonner';
 
 interface DialogOrderManualProps {
   data?: Category[];
-  isLoading: boolean;
-}
-async function OrderManual(data: {
-  categoryCode: string;
-  layananId: string;
-  whatsapp: string;
-}) {
-  try {
-    const req = await axios.post('/api/testing/order', data);
-    return req.data;
-  } catch (error) {
-    console.log(error);
-  }
+  children: ReactNode;
 }
 
-export function DialogOrderManual({ data }: DialogOrderManualProps) {
+export function DialogOrderManual({ data, children }: DialogOrderManualProps) {
   const [selectCategories, setSelectCategories] = useState<string>('');
   const [selectedService, setSelectedService] = useState<string>('');
   const [whatsApp, setWhatsApp] = useState<string>('');
@@ -56,16 +40,24 @@ export function DialogOrderManual({ data }: DialogOrderManualProps) {
   const handleSelect = (value: string) => {
     setSelectCategories(value);
   };
+  const { mutate } = trpc.order.createManual.useMutation({
+    onSuccess: () => {
+      toast.success('created successfully');
+    },
+    onError: () => {
+      toast.error('failed to create order');
+    },
+  });
   const { data: layanans } = trpc.layanans.getLayananByCategory.useQuery({
     category: selectCategories,
   });
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      await OrderManual({
-        categoryCode: selectCategories,
+      mutate({
+        categoryId: selectCategories,
         layananId: selectedService,
-        whatsapp: whatsApp.toString(),
+        whatsapp: whatsApp,
       });
     } catch (error) {
       console.log(error);
@@ -75,12 +67,7 @@ export function DialogOrderManual({ data }: DialogOrderManualProps) {
   };
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button className="text-white">
-          <Plus />
-          <span>Create</span>
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Order Manual</DialogTitle>
@@ -103,7 +90,10 @@ export function DialogOrderManual({ data }: DialogOrderManualProps) {
                   <SelectGroup>
                     <SelectLabel>Categories</SelectLabel>
                     {data?.map((category) => (
-                      <SelectItem key={category.id} value={category.kode}>
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
                         {category.name}
                       </SelectItem>
                     ))}
@@ -129,7 +119,9 @@ export function DialogOrderManual({ data }: DialogOrderManualProps) {
                 ) : (
                   <Select
                     value={selectedService}
-                    onValueChange={(value) => setSelectedService(value)}
+                    onValueChange={(value) =>
+                      setSelectedService(value.toString())
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a service" />
@@ -140,13 +132,13 @@ export function DialogOrderManual({ data }: DialogOrderManualProps) {
                         {layanans.layanan.map((service) => (
                           <SelectItem
                             key={service.id}
-                            value={service.providerId}
+                            value={service.id.toString()}
                             className="flex justify-between"
                           >
                             <div className="flex justify-between w-full">
                               <span>{service.layanan}</span>
                               <span className="text-muted-foreground ml-4">
-                                Rp {service.harga.toLocaleString('id-ID')}
+                                {FormatPrice(service.harga)}
                               </span>
                             </div>
                           </SelectItem>

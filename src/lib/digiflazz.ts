@@ -1,24 +1,13 @@
-import { Product } from '@/types/digiflazz/ml';
+import { Product, TransactionType } from '@/types/digiflazz/ml';
 import axios, { AxiosError } from 'axios';
 import crypto from 'crypto';
+import { auth } from '../../auth';
+import { prisma } from './prisma';
 interface TopUpRequest {
-  customerId: string; // ID pelanggan (nomor hp, user id game, dll)
-  productCode: string; // Kode produk dari Digiflazz
-  ref_id: string; // ID referensi unik (biasanya orderID/transactionID)
+  whatsapp: string;
+  productCode: string;
 }
 
-// interface DigiflazzResponse {
-//   data: {
-//     ref_id: string;
-//     customer_no: string;
-//     buyer_sku_code: string;
-//     message: string;
-//     status: string;
-//     rc: string;
-//     sn: string;
-//     price: number;
-//   };
-// }
 export class Digiflazz {
   private username: string;
   private apiKey: string;
@@ -77,23 +66,34 @@ export class Digiflazz {
 
   async TopUp(topUpData: TopUpRequest) {
     try {
-      const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
-      const payload = {
+      const refId = `TRX-${Date.now()}`;
+
+      const signature = crypto
+        .createHash('md5')
+        .update(this.username + this.apiKey + refId)
+        .digest('hex');
+
+      // Prepare request data
+      const data = {
         username: this.username,
         buyer_sku_code: topUpData.productCode,
-        customer_no: topUpData.customerId,
-        ref_id: topUpData.ref_id,
-        sign: sign,
+        customer_no: topUpData.whatsapp,
+        ref_id: refId,
+        sign: signature,
       };
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      const response = await axios.post(
-        'https://api.digiflazz.com/v1/transaction',
-        payload,
-        { headers }
-      );
-      return response.data;
+
+      // Send request to Digiflazz API
+      const response = await fetch('https://api.digiflazz.com/v1/transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result: TransactionType = await response.json();
+
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         console.error('Error making order:', error.message);
@@ -101,7 +101,83 @@ export class Digiflazz {
       }
     }
   }
+  async deposite(method: string, amount: number) {
+    try {
+      const session = await auth();
+      if (!session?.user) {
+        return {
+          status: false,
+          message: 'Unatuhorized',
+          statusCode: 401,
+        };
+      }
+      const user = await prisma.users.findUnique({
+        where: { id: session?.user.id },
+      });
 
+      let nomor: string;
+      if (method === 'OVO') {
+        nomor = process.env.NEXT_PUBLIC_NO_ADMIN as string;
+      } else if (method === 'GOPAY') {
+        nomor = process.env.NEXT_PUBLIC_NO_ADMIN as string;
+      } else if (method === 'BCA') {
+        nomor = process.env.NEXT_PUBLIC_BCA_ADMIN as string;
+      } else if (method === 'SHOPEPAY') {
+        nomor = process.env.NEXT_PUBLIC_NO_ADMIN as string;
+      } else if (method === 'DANA') {
+        nomor = process.env.NEXT_PUBLIC_NO_ADMIN as string;
+      } else if (method === 'BRI') {
+        nomor = '';
+      } else {
+        return {
+          status: false,
+          statusCode: 404,
+          message: 'Method Not Allowed',
+        };
+      }
+
+      if (!user) {
+        return {
+          status: false,
+          message: 'Failed To Find User',
+          statusCode: 401,
+        };
+      }
+      await prisma.deposits.create({
+        data: {
+          method,
+          status: 'PENDING',
+          username: user.username,
+          amount: 0,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Digiflazz price check error:', error.message);
+
+        // Check if it's an Axios error with a response
+        if (axios.isAxiosError(error)) {
+          const axiosError = error as AxiosError;
+          if (axiosError.response) {
+            console.error(
+              'Response data:',
+              JSON.stringify(axiosError.response.data)
+            );
+            console.error('Response status:', axiosError.response.status);
+            console.error('Response headers:', axiosError.response.headers);
+          } else if (axiosError.request) {
+            console.error('No response received:', axiosError.request);
+          } else {
+            console.error('Error setting up request:', axiosError.message);
+          }
+          console.error('Error config:', axiosError.config);
+        }
+      } else {
+        console.error('Unknown error:', error);
+      }
+      throw error;
+    }
+  }
   async checkPricePrepaid() {
     try {
       const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');

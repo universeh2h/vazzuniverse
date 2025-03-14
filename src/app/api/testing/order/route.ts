@@ -5,9 +5,8 @@ export async function POST(req: Request) {
   const DIGI_API_KEY = process.env.DIGI_API_KEY as string;
 
   try {
-    const { categoryCode, layananId, whatsapp } = await req.json();
+    const { layananId, whatsapp } = await req.json();
 
-    // Generate signature (md5 hash of username + api_key + ref_id)
     const refId = `TRX-${Date.now()}`;
     const signature = crypto
       .createHash('md5')
@@ -33,14 +32,18 @@ export async function POST(req: Request) {
     });
 
     const result = await response.json();
-    console.log(result);
 
     // Return the result
     return Response.json(result);
   } catch (error) {
-    console.error('Error creating order:', error);
+    if (error instanceof Error) {
+      return Response.json(
+        { success: false, message: error.message },
+        { status: 400 }
+      );
+    }
     return Response.json(
-      { success: false, message: error.message },
+      { success: false, message: 'internal server error ' },
       { status: 500 }
     );
   }

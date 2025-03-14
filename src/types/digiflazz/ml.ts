@@ -15,3 +15,22 @@ export type Product = {
   end_cut_off: string;
   desc: string;
 };
+
+export interface TransactionType {
+  data: {
+    ref_id: string
+    customer_no: string
+    buyer_sku_code: string
+    message: string
+    status: string
+    rc: string
+    sn: string
+  }
+}
+
+
+{
+    "data": {
+       
+    }
+} 

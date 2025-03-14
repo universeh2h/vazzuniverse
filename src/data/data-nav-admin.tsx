@@ -46,7 +46,7 @@ export const dataNavAdmin: NavItem[] = [
     children: [
       {
         nama: 'Member Deposit',
-        path: '/dashboard/member/user-deposit',
+        path: '/dashboard/user-deposit',
       },
       {
         nama: 'Kelola Member',

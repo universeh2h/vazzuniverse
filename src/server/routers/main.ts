@@ -255,7 +255,7 @@ export const mainRouter = router({
     .query(async ({ ctx, input }) => {
       try {
         // Determine which fields to select
-        const selectedFields = input.fields?.length
+        const selectedFields = input?.fields?.length
           ? input.fields.reduce((acc, field) => {
               acc[field] = true;
               return acc;

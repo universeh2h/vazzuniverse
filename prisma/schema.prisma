@@ -290,3 +290,17 @@ model InvoiceItems {
   
   @@map("invoice_items")
 }
+
+
+model Deposits{
+  id   Int   @id  @default(autoincrement())
+  username  String  
+  method    String  
+  amount  Int  @default(0)
+  status String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+
+  @@index([username])
+}

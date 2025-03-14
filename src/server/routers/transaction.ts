@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { publicProcedure, router } from '../trpc';
 import { toZonedTime } from 'date-fns-tz';
 import { Prisma } from '@prisma/client';
+import { orderSchema } from '@/types/schema/order';
+import { TRPCError } from '@trpc/server';
 
 export const transaction = router({
   getTransaction: publicProcedure
@@ -353,14 +355,14 @@ export const transaction = router({
       last30Days.setDate(today.getDate() - 30);
 
       const dailyTransactions = await ctx.prisma.$queryRaw`
-  SELECT 
-    DATE(\`created_at\`) as date,
-    CAST(COUNT(*) AS CHAR) as count,
-    CAST(SUM(CASE WHEN \`payment_status\` = 'PAID' THEN \`final_amount\` ELSE 0 END) AS CHAR) as revenue
-  FROM \`transactions\`
-  WHERE \`created_at\` >= ${last30Days} AND \`created_at\` <= ${today}
-  GROUP BY DATE(\`created_at\`)
-  ORDER BY date ASC
+      SELECT 
+      DATE(\`created_at\`) as date,
+        CAST(COUNT(*) AS CHAR) as count,
+        CAST(SUM(CASE WHEN \`payment_status\` = 'PAID' THEN \`final_amount\` ELSE 0 END) AS CHAR) as revenue
+      FROM \`transactions\`
+      WHERE \`created_at\` >= ${last30Days} AND \`created_at\` <= ${today}
+      GROUP BY DATE(\`created_at\`)
+      ORDER BY date ASC
 `;
       return {
         totalTransactions,
@@ -378,4 +380,33 @@ export const transaction = router({
         dailyTransactions,
       };
     }),
+  create: publicProcedure.input(orderSchema).query(async ({ ctx, input }) => {
+    try {
+      const data = await ctx.prisma.transaction.create({
+        data: {
+          ...input,
+        },
+      });
+
+      return {
+        data,
+        status: true,
+        statusCode: 201,
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        console.error(error);
+        return {
+          status: false,
+          mesage: `failed to create transaction ${error.message}`,
+          statusCode: 400,
+        };
+      }
+      return {
+        status: false,
+        message: 'Internal Server Error',
+        statusCode: 500,
+      };
+    }
+  }),
 });
