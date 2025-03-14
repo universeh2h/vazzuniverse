@@ -246,9 +246,11 @@ export const mainRouter = router({
   }),
   getCategories: publicProcedure
     .input(
-      z.object({
-        fields: z.array(z.string()).optional(), // Optional array of fields to select
-      })
+      z
+        .object({
+          fields: z.array(z.string()).optional(), // Optional array of fields to select
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       try {
