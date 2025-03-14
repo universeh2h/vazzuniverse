@@ -23,6 +23,8 @@ model Users  {
   updatedAt   DateTime  @updatedAt  @map("updated_at")
   Account Account[]
   Session Session[]
+  Transaction  Transaction  []
+  invoice Invoices[]
 
 
 @@index([username])
@@ -87,6 +89,8 @@ model Categories  {
   createdAt  DateTime   @default(now())  @map("created_at")
   updatedAt   DateTime  @updatedAt  @map("updated_at")
   bannerLayanan   String   @map("bannerlayanan")
+  transaction  Transaction[]
+  vouchers  VoucherCategory[]
 
   @@index([kode,name])
   @@map("kategoris")
@@ -124,6 +128,8 @@ model Methods  {
   name String
   images String
   code  String  @db.VarChar(50)
+  paymentType  String?  @map("payment_type")
+  paymentCodeMidtrans  String?  @map("payment_code_midtrans")
   keterangan  String
   type  String   @map("tipe")
   createdAt   DateTime   @default(now())  @map("created_at")
@@ -131,15 +137,10 @@ model Methods  {
   @@map("methods")
 }
 
-
-
-
-
-
 model Layanan {
   id               Int      @id @default(autoincrement())
   kategoriId       String  @map("kategori_id")
-  subCategoryId    Int   @map("sub_kategori_id")
+  subCategoryId    Int   @map("sub_category_id")
   layanan          String  
   providerId       String    @map("provider_id")  
   harga            Int
@@ -161,5 +162,131 @@ model Layanan {
   productLogo      String?  @map("product_logo")
   createdAt        DateTime? @default(now())  @map("created_at")
   updatedAt        DateTime? @updatedAt  @map("updated_at")
+    transaction  Transaction[]
+
   @@map("layanans")
+}
+model Voucher {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  discountType   String    
+  discountValue  Float     
+  maxDiscount    Float?    
+  minPurchase    Float?    
+  usageLimit     Int?      
+  usageCount     Int       @default(0)
+  isForAllCategories Boolean @default(false) @map("is_for_all_categories")
+  isActive       Boolean   @default(true) @map("is_active")
+  startDate      DateTime  @default(now()) @map("start_date")
+  expiryDate     DateTime  @map("expiry_date")
+  description    String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  transaction  Transaction[]
+  
+  categories     VoucherCategory[]
+
+  @@map("vouchers")
+}
+
+model VoucherCategory {
+  id          Int        @id @default(autoincrement())
+  voucherId   Int        @map("voucher_id")
+  categoryId  Int        @map("category_id")
+  
+  voucher     Voucher    @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  category    Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([voucherId, categoryId])
+  @@map("voucher_categories")
+}
+
+model Transaction {
+  id                Int       @id @default(autoincrement())
+  merchantOrderId   String    @unique @map("merchant_order_id")
+  userId            String?   @map("user_id")
+  layananId         Int       @map("layanan_id")
+  categoryId        Int       @map("category_id")
+  originalAmount    Float     @map("original_amount")
+  discountAmount    Float     @default(0) @map("discount_amount")
+  finalAmount       Float     @map("final_amount")
+  voucherId         Int?      @map("voucher_id")
+  paymentStatus     String    @map("payment_status") 
+  paymentCode       String    @map("payment_code")
+  paymentReference  String?   @map("payment_reference")
+  paymentUrl        String?   @map("payment_url")
+  noWa              String    @map("no_wa")
+  statusMessage     String?   @map("status_message")
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime? @updatedAt @map("updated_at")
+
+  topUpStatus       String?   @map("top_up_status") 
+  topUpReference    String?   @map("top_up_reference")
+  topUpMessage      String?   @map("top_up_message")
+  topUpProcessedAt  DateTime? @map("top_up_processed_at")
+  invoice    Invoices[]
+
+  user              Users?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  layanan           Layanan   @relation(fields: [layananId], references: [id])
+  category          Categories @relation(fields: [categoryId], references: [id])
+  voucher           Voucher?  @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
+  @@index([merchantOrderId])
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([voucherId])
+  @@index([topUpStatus]) 
+  @@map("transactions")
+
+}
+model Invoices {
+  id                Int       @id @default(autoincrement())
+  invoiceNumber     String    @unique @map("invoice_number")
+  transactionId     Int?      @map("transaction_id") 
+  userId            String?    @map("user_id")
+  
+  subtotal          Float
+  taxAmount         Float     @default(0) @map("tax_amount")
+  discountAmount    Float     @default(0) @map("discount_amount")
+  totalAmount       Float     @map("total_amount")
+  
+  status            String    // "draft", "sent", "paid", "cancelled", etc.
+  dueDate           DateTime  @map("due_date")
+  paymentDate       DateTime? @map("payment_date")
+  
+  notes             String?
+  termsAndConditions String?  @map("terms_and_conditions")
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime? @updatedAt @map("updated_at")
+  
+  // Relations
+  transaction       Transaction? @relation(fields: [transactionId], references: [id])
+  user              Users?        @relation(fields: [userId], references: [id])
+  invoiceItems      InvoiceItems[]
+  
+  @@index([invoiceNumber])
+  @@index([userId])
+  @@index([transactionId])
+  @@index([status])
+  
+  @@map("invoices")
+}
+
+model InvoiceItems {
+  id                Int       @id @default(autoincrement())
+  invoiceId         Int       @map("invoice_id")
+  description       String
+  quantity          Int       @default(1)
+  unitPrice         Float     @map("unit_price")
+  amount            Float
+  
+  // Relations
+  invoice           Invoices  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+  
+  @@map("invoice_items")
 }

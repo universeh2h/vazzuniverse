@@ -8,3 +8,4 @@ export type TransactionMidtrans =
   | 'deny'
   | 'expire'
   | 'cancel';
+export const CATEGORIES_QUERY_KEY = ['categories'] as const;

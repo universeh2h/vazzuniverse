@@ -1,16 +1,15 @@
 'use client';
-
-import type { Product } from '@/types/digiflazz/ml';
 import type { JSX } from 'react';
 import { FormatPrice } from '@/utils/formatPrice';
+import { PlansProps } from '@/types/category';
 
 export function PlansOrder({
   plan,
   onSelect,
   isSelected,
 }: {
-  plan: Product;
-  onSelect: (select: Product) => void;
+  plan: PlansProps;
+  onSelect: (select: PlansProps) => void;
   isSelected?: boolean;
 }): JSX.Element {
   return (
@@ -34,7 +33,7 @@ export function PlansOrder({
         </div>
       )}
 
-      <div className="px-3 py-2 space-y-2">
+      <div className="p-3 space-y-2">
         {/* Diamond Icon and Product Name */}
         <div className="flex items-center gap-2 mt-2">
           <h3
@@ -42,7 +41,7 @@ export function PlansOrder({
               isSelected ? 'text-white' : 'text-gray-200'
             }`}
           >
-            {plan.product_name}
+            {plan.layanan}
           </h3>
         </div>
 
@@ -55,7 +54,7 @@ export function PlansOrder({
                 isSelected ? 'text-white' : 'text-gray-200'
               }`}
             >
-              {FormatPrice(plan.price)}
+              {FormatPrice(plan.harga)}
             </p>
           </div>
         </div>

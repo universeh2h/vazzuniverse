@@ -27,3 +27,11 @@ export type SubCategories = {
   categoriesId: number;
   active: boolean;
 };
+
+export type PlansProps = {
+  id: number;
+  subCategoryId: number;
+  providerId: string;
+  layanan: string;
+  harga: number;
+};

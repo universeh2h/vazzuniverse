@@ -4,16 +4,10 @@ import { JSX } from 'react';
 // hooks/use-duitku-payment.ts
 import { useState } from 'react';
 import axios from 'axios';
-import { RequestBody } from '@/app/api/midtrans/payment/route';
+import { RequestPayment } from '@/app/api/payment/initiate/route';
+import { useRouter } from 'next/navigation';
+import { PaymentDetails } from '@/types/payment';
 
-interface PaymentResponse {
-  paymentUrl?: string;
-  reference: string;
-  statusCode: string;
-  statusMessage: string;
-}
-
-// Display names for payment types
 export const typeLabels: Record<string, string> = {
   'virtual-account': 'Virtual Account',
   'e-walet': 'E-Wallet',
@@ -30,15 +24,21 @@ export const typeIcons: Record<string, JSX.Element> = {
 export function useMidtransPayment() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { push } = useRouter();
 
   const initiatePayment = async (
-    orderDetails: RequestBody
-  ): Promise<PaymentResponse> => {
+    orderDetails: RequestPayment
+  ): Promise<PaymentDetails> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post('/api/midtrans/payment', orderDetails);
+      const response = await axios.post<PaymentDetails>(
+        '/api/midtrans/payment',
+        orderDetails
+      );
+      const url = `/invoice/${response.data.transactionId}`;
+      push(url);
       return response.data;
     } catch (err: any) {
       console.error('Payment initiation error:', err);

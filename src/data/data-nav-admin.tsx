@@ -60,19 +60,19 @@ export const dataNavAdmin: NavItem[] = [
     children: [
       {
         nama: 'Kategori',
-        path: '/dashboard/produk/kategori',
+        path: '/dashboard/product/category',
       },
       {
         nama: 'Sub - Kategori',
-        path: '/dashboard/produk/sub-kategori',
+        path: '/dashboard/product/sub-category',
       },
       {
         nama: 'Layanan',
-        path: '/dashboard/produk/layanan',
+        path: '/dashboard/product/layanan',
       },
       {
         nama: 'Voucher',
-        path: '/dashboard/produk/voucher',
+        path: '/dashboard/product/voucher',
       },
     ],
   },

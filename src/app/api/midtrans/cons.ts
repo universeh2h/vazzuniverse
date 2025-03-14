@@ -5,6 +5,6 @@ export const URL_MIDTRANS_CHARGE = production
 export const URL_MIDTRANS_STATUS = production
   ? 'https://api.midtrans.com/v2/'
   : 'https://api.sandbox.midtrans.com/v2/';
-export const ORDER_ID = `ORDER-${Date.now()}-${Math.floor(
-  Math.random() * 100000
-)}`;
+export function generateOrderId() {
+  return `ORDER-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+}

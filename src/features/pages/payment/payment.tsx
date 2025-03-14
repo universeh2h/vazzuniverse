@@ -1,5 +1,5 @@
 'use client';
-import { type JSX, useState, useEffect } from 'react';
+import { type JSX, useState } from 'react';
 import { trpc } from '@/utils/trpc';
 import Image from 'next/image';
 import type { PaymentMethod } from '@/types/payment';
@@ -9,65 +9,28 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { CreditCard, CheckCircle2 } from 'lucide-react';
+import { CreditCard, CheckCircle2, LockIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { typeIcons, typeLabels } from '@/hooks/use-payment';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlansStore } from '@/hooks/use-select-plan';
 import { FormatPrice } from '@/utils/formatPrice';
-import { Product } from '@/types/digiflazz/ml';
-import { toast } from 'sonner';
 import { DialogPayment } from './dialog-payment';
+import type { PlansProps } from '@/types/category';
 
 const MotionPaymentOption = motion.div;
 const MotionAccordionContent = motion(AccordionContent);
 
 export function PaymentsSection({
   amount,
-  productDetails,
 }: {
-  amount: number;
-  productDetails: Product;
+  amount?: number;
+  productDetails?: PlansProps | null;
 }): JSX.Element {
   const { data: methods } = trpc.methods.getMethods.useQuery();
   const { noWa, setNowa, selectPayment, setSelectPayment } = usePlansStore();
   const [expandedType, setExpandedType] = useState<string | null>(null);
-
-  // Show toast if amount is missing
-  useEffect(() => {
-    if (!amount) {
-      toast.error('Silakan pilih paket terlebih dahulu', {
-        description:
-          'Anda harus memilih paket sebelum melanjutkan ke pembayaran',
-        duration: 3000,
-      });
-    }
-  }, [amount]);
-
-  if (!amount) {
-    return (
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full mx-auto p-6 bg-[#001435] border-2 border-blue-900 rounded-2xl mt-5 space-y-6 shadow-lg"
-      >
-        <div className="text-center py-8">
-          <div className="mb-4 text-blue-300">
-            <CreditCard className="mx-auto h-12 w-12 opacity-50" />
-          </div>
-          <h3 className="text-xl font-medium text-blue-100 mb-2">
-            Pilih Paket Terlebih Dahulu
-          </h3>
-          <p className="text-blue-300 max-w-md mx-auto">
-            Anda perlu memilih paket dari daftar yang tersedia sebelum dapat
-            melihat metode pembayaran.
-          </p>
-        </div>
-      </motion.section>
-    );
-  }
 
   const groupedMethods =
     methods?.data.reduce((acc, method) => {
@@ -82,12 +45,90 @@ export function PaymentsSection({
   const paymentTypes = Object.keys(groupedMethods);
 
   const handleSelectMethod = (method: PaymentMethod) => {
+    if (!amount) return;
+
     setSelectPayment({
-      code: method.code,
+      code: method.paymentCodeMidtrans as string,
       price: amount,
       name: method.name,
+      type: method.paymentType as string,
     });
   };
+
+  // Payment Methods Preview for when no plan is selected
+  const renderPaymentMethodsPreview = () => {
+    return (
+      <div className="space-y-6 mt-4">
+        {paymentTypes.map((type) => (
+          <div key={type} className="space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              {typeIcons[type] || (
+                <CreditCard className="h-4 w-4 text-blue-300" />
+              )}
+              <h4 className="text-sm font-medium text-blue-200">
+                {typeLabels[type] || type}
+              </h4>
+            </div>
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+              {groupedMethods[type].map((method) => (
+                <div
+                  key={method.id}
+                  className="relative flex flex-col items-center p-2 bg-blue-950/30 rounded-lg border border-blue-800 opacity-60"
+                >
+                  <div className="relative w-12 h-12 mb-1">
+                    <Image
+                      fill
+                      src={method.images || '/placeholder.svg'}
+                      alt={method.name}
+                      className="object-contain filter grayscale"
+                    />
+                  </div>
+                  <span className="text-xs text-blue-400 text-center truncate w-full">
+                    {method.name.split(' ')[0]}
+                  </span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-blue-950/60 rounded-lg">
+                    <LockIcon className="w-5 h-5 text-blue-300" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (!amount) {
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full mx-auto p-6 bg-[#001435] border-2 border-blue-900 rounded-2xl mt-5 space-y-6 shadow-lg"
+      >
+        <div className="text-center py-4">
+          <div className="mb-4 text-blue-300">
+            <CreditCard className="mx-auto h-12 w-12 opacity-50" />
+          </div>
+          <h3 className="text-xl font-medium text-blue-100 mb-2">
+            Pilih Paket Terlebih Dahulu
+          </h3>
+          <p className="text-blue-300 max-w-md mx-auto mb-4">
+            Anda perlu memilih paket dari daftar yang tersedia sebelum dapat
+            menggunakan metode pembayaran.
+          </p>
+        </div>
+
+        <div className="border-t border-blue-800 pt-4">
+          <h4 className="text-sm text-blue-300 mb-2 flex items-center gap-2">
+            <LockIcon className="w-4 h-4" />
+            Metode Pembayaran Tersedia:
+          </h4>
+          {renderPaymentMethodsPreview()}
+        </div>
+      </motion.section>
+    );
+  }
 
   return (
     <motion.section
@@ -167,9 +208,7 @@ export function PaymentsSection({
                   <span className="font-medium">
                     {typeLabels[type] || type}
                   </span>
-                  <span>
-                    {FormatPrice((selectPayment?.price as number) || amount)}
-                  </span>
+                  <span>{FormatPrice(amount)}</span>
                 </motion.div>
               </AccordionTrigger>
 
@@ -192,7 +231,7 @@ export function PaymentsSection({
                         key={method.id}
                         className={cn(
                           'cursor-pointer border border-blue-800 hover:border-blue-400 rounded-lg w-full h-24 overflow-hidden relative bg-blue-950/20',
-                          selectPayment?.code === method.code &&
+                          selectPayment?.code === method.paymentCodeMidtrans &&
                             'border-blue-400 bg-blue-900/30'
                         )}
                         onClick={() => handleSelectMethod(method)}
@@ -219,7 +258,7 @@ export function PaymentsSection({
                             <Image
                               width={300}
                               height={300}
-                              src={method.images}
+                              src={method.images || '/placeholder.svg'}
                               alt={method.name}
                               className="size-12 object-contain"
                             />
@@ -269,12 +308,7 @@ export function PaymentsSection({
             exit={{ opacity: 0, y: 10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <DialogPayment
-              noWa={noWa?.toString() || ''}
-              amount={amount}
-              product={productDetails}
-              method={selectPayment}
-            />
+            <DialogPayment />
           </motion.div>
         )}
       </AnimatePresence>

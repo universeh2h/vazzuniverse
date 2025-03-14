@@ -1,9 +1,8 @@
 // app/api/payment/check-status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-
-const MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE;
-const API_KEY = process.env.DUITKU_API_KEY;
+const MERCHANT_CODE = process.env.DUITKU_DEV_MERCHANT;
+const API_KEY = process.env.DUITKU_DEV_API_KEY;
 const BASE_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://passport.duitku.com/webapi'

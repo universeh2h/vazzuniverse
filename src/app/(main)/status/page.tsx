@@ -1,125 +1,135 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import axios from 'axios';
-import Link from 'next/link';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
 
-export default function PaymentStatusPage() {
-  const searchParams = useSearchParams();
-  const merchantOrderId = searchParams.get('merchantOrderId');
+interface PaymentDetailProps {
+  merchantOrderId: string;
+}
 
-  const [status, setStatus] = useState<
-    'loading' | 'success' | 'failed' | 'pending'
-  >('loading');
-  const [statusMessage, setStatusMessage] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [orderDetails, setOrderDetails] = useState<any>(null);
+interface PaymentData {
+  paymentUrl?: string;
+  vaNumber?: string;
+  qrString?: string;
+  reference?: string;
+  amount?: string;
+  paymentMethod?: string;
+  statusCode?: string;
+  statusMessage?: string;
+}
+
+export default function PaymentDetail({ merchantOrderId }: PaymentDetailProps) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
 
   useEffect(() => {
-    if (!merchantOrderId) {
-      setStatus('failed');
-      setStatusMessage('Invalid order reference');
-      return;
+    async function fetchPaymentDetail() {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `/api/payment/transaction-detail?merchantOrderId=${merchantOrderId}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch payment details');
+        }
+
+        const data = await response.json();
+        setPaymentData(data);
+      } catch (err) {
+        setError('Gagal mendapatkan detail pembayaran');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    const checkPaymentStatus = async () => {
-      try {
-        const response = await axios.get(
-          `/api/payment/check-status?merchantOrderId=${merchantOrderId}`
-        );
-        const data = response.data;
-
-        setOrderDetails(data);
-
-        if (data.statusCode === '00' || data.statusCode === '0') {
-          setStatus('success');
-          setStatusMessage('Payment completed successfully');
-        } else if (data.statusCode === '01') {
-          setStatus('pending');
-          setStatusMessage('Payment is pending');
-        } else {
-          setStatus('failed');
-          setStatusMessage(data.statusMessage || 'Payment failed');
-        }
-      } catch (error) {
-        console.error('Error checking payment status:', error);
-        setStatus('failed');
-        setStatusMessage('Failed to check payment status');
-      }
-    };
-
-    checkPaymentStatus();
+    if (merchantOrderId) {
+      fetchPaymentDetail();
+    }
   }, [merchantOrderId]);
 
+  if (loading) return <div>Memuat detail pembayaran...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
+  if (!paymentData) return <div>Tidak ada data pembayaran</div>;
+
   return (
-    <div className="max-w-lg mx-auto mt-10 p-6 bg-blue-900/30 border border-blue-800 rounded-xl">
-      <h1 className="text-2xl font-bold text-white mb-6 text-center">
-        Payment Status
-      </h1>
+    <div className="border p-4 rounded-lg shadow">
+      <h2 className="text-xl font-bold mb-4">Detail Pembayaran</h2>
 
-      <div className="flex flex-col items-center justify-center mb-6">
-        {status === 'loading' && (
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        )}
-
-        {status === 'success' && (
-          <CheckCircle className="h-16 w-16 text-green-500 mb-2" />
-        )}
-
-        {status === 'failed' && (
-          <XCircle className="h-16 w-16 text-red-500 mb-2" />
-        )}
-
-        {status === 'pending' && (
-          <Clock className="h-16 w-16 text-yellow-500 mb-2" />
-        )}
-
-        <p className="text-xl font-medium text-white">{statusMessage}</p>
-      </div>
-
-      {orderDetails && (
-        <div className="mb-6 bg-blue-950/50 p-4 rounded-lg">
-          <h2 className="text-lg font-semibold text-blue-100 mb-2">
-            Order Details
-          </h2>
-          <div className="grid grid-cols-2 gap-2 text-blue-200">
-            <div>Order ID:</div>
-            <div className="text-right">{orderDetails.merchantOrderId}</div>
-
-            {orderDetails.reference && (
-              <>
-                <div>Reference:</div>
-                <div className="text-right">{orderDetails.reference}</div>
-              </>
-            )}
-
-            {orderDetails.amount && (
-              <>
-                <div>Amount:</div>
-                <div className="text-right">
-                  Rp {parseInt(orderDetails.amount).toLocaleString()}
-                </div>
-              </>
-            )}
-
-            {orderDetails.productDetail && (
-              <>
-                <div>Product:</div>
-                <div className="text-right">{orderDetails.productDetail}</div>
-              </>
-            )}
-          </div>
+      <div className="space-y-2">
+        <div>
+          <span className="font-medium">Order ID:</span> {merchantOrderId}
         </div>
-      )}
 
-      <div className="text-center">
-        <Link
-          href="/"
-          className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
-        >
-          Back to Home
-        </Link>
+        <div>
+          <span className="font-medium">Reference:</span>{' '}
+          {paymentData.reference}
+        </div>
+
+        <div>
+          <span className="font-medium">Jumlah:</span>{' '}
+          {parseFloat(paymentData.amount || '0').toLocaleString('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+          })}
+        </div>
+
+        <div>
+          <span className="font-medium">Status:</span>{' '}
+          {paymentData.statusMessage}
+        </div>
+
+        {paymentData.paymentMethod && (
+          <div>
+            <span className="font-medium">Metode Pembayaran:</span>{' '}
+            {paymentData.paymentMethod}
+          </div>
+        )}
+
+        {/* Tampilkan nomor VA jika ada */}
+        {paymentData.vaNumber && (
+          <div className="bg-gray-100 p-3 rounded-md mt-2">
+            <span className="font-medium block mb-1">
+              Nomor Virtual Account:
+            </span>
+            <span className="text-lg font-mono">{paymentData.vaNumber}</span>
+          </div>
+        )}
+
+        {/* Tampilkan QRIS string jika ada */}
+        {paymentData.qrString && (
+          <div className="bg-gray-100 p-3 rounded-md mt-2">
+            <span className="font-medium block mb-1">QRIS Code:</span>
+            <div className="flex justify-center my-2">
+              <Image
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  paymentData.qrString
+                )}`}
+                alt="QRIS Code"
+                width={200}
+                height={200}
+              />
+            </div>
+            <span className="text-sm block text-center">
+              Scan QR code di atas dengan aplikasi pembayaran Anda
+            </span>
+          </div>
+        )}
+
+        {/* Tampilkan link pembayaran jika ada */}
+        {paymentData.paymentUrl && (
+          <div className="mt-4">
+            <a
+              href={paymentData.paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-blue-500 text-white px-4 py-2 rounded-md inline-block"
+            >
+              Lanjutkan ke Halaman Pembayaran
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

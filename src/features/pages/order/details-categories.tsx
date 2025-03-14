@@ -3,13 +3,13 @@ import { trpc } from '@/utils/trpc';
 import { HelpCircle } from 'lucide-react';
 import { SidebarOrder } from './sidebar';
 import { LoadingOverlay } from '@/components/ui/loading-overlay';
-import { OrderPage } from './order';
-import { Product } from '@/types/digiflazz/ml';
 import Image from 'next/image';
 import { PlaceholderContent } from './placeholder/content';
-import { Category, SubCategories } from '@/types/category';
+import { Category, PlansProps, SubCategories } from '@/types/category';
 import { usePlansStore } from '@/hooks/use-select-plan';
-import { PaymentsSection } from '../payment/payment';
+import { OrderPage } from './order';
+import { useEffect } from 'react';
+import { PaymentsSection } from '../payment/midtrans-payment-section';
 
 export default function DetailsCategories({ name }: { name: string }) {
   const { data, isLoading } = trpc.main.getCategoriesByName.useQuery({
@@ -19,12 +19,15 @@ export default function DetailsCategories({ name }: { name: string }) {
   const { data: plans } = trpc.layanans.getLayananByCategory.useQuery({
     category: name,
   });
-  console.log(name);
-  console.log(plans);
 
   const category = data?.categories;
-  const { selectPlans } = usePlansStore();
+  const { selectPlans, setCategories } = usePlansStore();
 
+  useEffect(() => {
+    if (data) {
+      setCategories(data.categories);
+    }
+  }, [setCategories, data]);
   if (isLoading) {
     return <LoadingOverlay />;
   }
@@ -67,17 +70,15 @@ export default function DetailsCategories({ name }: { name: string }) {
               <PlaceholderContent category={category as Category} />
             </div>
             <div>
-              {/* <OrderPage
-                plans={plans.data as Product[]}
-                subCategories={data?.subCategories as SubCategories[]}
-              /> */}
+              <OrderPage
+                plans={plans?.layanan as PlansProps[]}
+                subCategories={plans?.subCategories as SubCategories[]}
+              />
 
-              {selectPlans && (
-                <PaymentsSection
-                  amount={selectPlans.price}
-                  productDetails={selectPlans}
-                />
-              )}
+              <PaymentsSection
+                amount={selectPlans?.harga as number}
+                productDetails={selectPlans}
+              />
             </div>
           </div>
         </div>

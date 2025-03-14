@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { ButtonProfile } from '../ui/button-profile';
 import { AuthDropdown } from '../ui/auth-dropodown';
 import { NavItem } from '../ui/nav-item';
-import { NavItems } from '@/types/schema/navbar';
-import { User } from '@/types/schema/user';
+import type { NavItems } from '@/types/schema/navbar';
+import type { User } from '@/types/schema/user';
 
 interface DesktopSidebarProps {
   navItems: NavItems[];
@@ -22,11 +22,11 @@ export const DesktopSidebar = ({
   isActive,
   isChildActive,
 }: DesktopSidebarProps) => (
-  <div className="hidden lg:flex h-screen w-64 flex-col fixed left-0 top-0 border-r z-30">
+  <div className="hidden lg:flex h-screen w-64 flex-col bg-sidebar fixed left-0 top-0 border-r border-r-sidebar-border z-30">
     {/* Branding */}
     <Link
       href="/dashboard"
-      className="flex items-center gap-2 font-semibold p-4 border-b"
+      className="flex items-center gap-2 font-semibold p-4 border-b border-b-sidebar-border text-sidebar-foreground"
     >
       <ButtonProfile username="Admin Panel" />
       <span>Admin Panel</span>
@@ -49,9 +49,9 @@ export const DesktopSidebar = ({
     </div>
 
     {/* Footer */}
-    <div className="border-t p-4 space-x-4">
+    <div className="border-t border-t-sidebar-border p-4 flex items-center gap-2 text-sidebar-foreground">
       <AuthDropdown user={user} />
-      <span>{user.username}</span>
+      <span className="text-secondary">{user.username}</span>
     </div>
   </div>
 );

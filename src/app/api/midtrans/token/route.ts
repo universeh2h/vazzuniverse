@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SERVER_KEY } from '../payment/route';
+import { SERVER_KEY } from '../status/route';
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         payment_type: 'gopay',
         transaction_details: {
           order_id: orderId,
-          gross_amount: parseInt('18604.00', 10), // Convert to integer
+          gross_amount: parseInt('18604.00', 10),
         },
         customer_details: {
           first_name: customer_name || 'John',
@@ -35,7 +35,6 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    // Log the full response for debugging
     console.log('Midtrans Response:', JSON.stringify(data, null, 2));
 
     return NextResponse.json({

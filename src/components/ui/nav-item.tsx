@@ -1,7 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { NavItems } from '@/types/schema/navbar';
+import type { NavItems } from '@/types/schema/navbar';
 
 interface NavItemProps {
   item: NavItems;
@@ -30,19 +32,19 @@ export const NavItem = ({
           className={cn(
             'flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors',
             isChildActiveProp(item.children)
-              ? 'bg-primary/10 text-primary'
-              : 'hover:bg-muted'
+              ? 'bg-primary/10 text-secondary'
+              : 'text-blue-sku hover:bg-muted'
           )}
           aria-expanded={isOpen}
         >
           <div className="flex items-center gap-3">
-            {item.icon}
+            {item.icon && <span className="text-primary">{item.icon}</span>}
             <span>{item.nama}</span>
           </div>
           {isOpen ? (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4 text-primary" />
           ) : (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 text-primary" />
           )}
         </button>
 
@@ -55,7 +57,7 @@ export const NavItem = ({
                 className={cn(
                   'flex items-center px-3 py-2 rounded-md text-sm transition-colors',
                   isActiveProp(child.path)
-                    ? 'bg-primary/10 text-primary font-medium'
+                    ? 'bg-primary/10 text-secondary font-medium'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
@@ -73,11 +75,13 @@ export const NavItem = ({
       href={item.path || '#'}
       className={cn(
         'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-        active ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+        active
+          ? 'bg-primary/10 text-primary'
+          : 'text-blue-sku hover:bg-muted hover:text-foreground'
       )}
       aria-current={active ? 'page' : undefined}
     >
-      {item.icon}
+      {item.icon && <span className="text-primary">{item.icon}</span>}
       <span>{item.nama}</span>
     </Link>
   );

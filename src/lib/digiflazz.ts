@@ -1,7 +1,24 @@
 import { Product } from '@/types/digiflazz/ml';
 import axios, { AxiosError } from 'axios';
 import crypto from 'crypto';
+interface TopUpRequest {
+  customerId: string; // ID pelanggan (nomor hp, user id game, dll)
+  productCode: string; // Kode produk dari Digiflazz
+  ref_id: string; // ID referensi unik (biasanya orderID/transactionID)
+}
 
+interface DigiflazzResponse {
+  data: {
+    ref_id: string;
+    customer_no: string;
+    buyer_sku_code: string;
+    message: string;
+    status: string;
+    rc: string;
+    sn: string;
+    price: number;
+  };
+}
 export class Digiflazz {
   private username: string;
   private apiKey: string;
@@ -30,7 +47,7 @@ export class Digiflazz {
         data: payload,
       });
 
-      return response.data;
+      return response.data.data;
     } catch (error) {
       if (error instanceof Error) {
         console.error('Digiflazz price check error:', error.message);
@@ -55,6 +72,33 @@ export class Digiflazz {
         console.error('Unknown error:', error);
       }
       throw error;
+    }
+  }
+
+  async TopUp(topUpData: TopUpRequest) {
+    try {
+      const sign = crypto.createHash('md5').update(this.apiKey).digest('hex');
+      const payload = {
+        username: this.username,
+        buyer_sku_code: topUpData.productCode,
+        customer_no: topUpData.customerId,
+        ref_id: topUpData.ref_id,
+        sign: sign,
+      };
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const response = await axios.post(
+        'https://api.digiflazz.com/v1/transaction',
+        payload,
+        { headers }
+      );
+      return response.data;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error making order:', error.message);
+        throw error;
+      }
     }
   }
 

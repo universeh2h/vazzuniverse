@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
+import { FormCategory } from '@/types/schema/categories';
 export const mainRouter = router({
   getBanners: publicProcedure.query(async ({ ctx }) => {
     try {
@@ -14,6 +16,58 @@ export const mainRouter = router({
       throw new Error('Failed to fetch banners');
     }
   }),
+  createCategory: publicProcedure
+    .input(FormCategory)
+    .mutation(async ({ ctx, input }) => {
+      const category = await ctx.prisma.categories.create({
+        data: {
+          ...input,
+        },
+      });
+
+      return {
+        message: 'success',
+        status: true,
+        data: category,
+      };
+    }),
+
+  updateCategory: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        data: FormCategory.partial(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const category = await ctx.prisma.categories.update({
+        where: { id: input.id },
+        data: input.data,
+      });
+
+      return {
+        message: 'success',
+        status: true,
+        data: category,
+      };
+    }),
+
+  deleteCategory: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await ctx.prisma.categories.delete({
+        where: { id: input.id },
+      });
+
+      return {
+        message: 'success',
+        status: true,
+      };
+    }),
   getCategoriesByName: publicProcedure
     .input(
       z.object({
@@ -100,6 +154,81 @@ export const mainRouter = router({
         throw new Error('Failed to fetch active categories');
       }
     }),
+  getCategoriesAll: publicProcedure
+    .input(
+      z.object({
+        type: z.string().optional(),
+        status: z.string().optional(),
+        page: z.number().optional(),
+        perPage: z.number().optional(),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { perPage = 10, page = 1, type, status, search } = input;
+
+      // Simplified pagination calculation
+      const take = perPage;
+      const skip = (page - 1) * take;
+
+      // Build dynamic where clause
+      const where: Prisma.CategoriesWhereInput = {};
+
+      // Add type filter if provided
+      if (type) {
+        where.type = type;
+      }
+
+      // Add status filter if provided
+      if (status) {
+        where.status = status;
+      }
+
+      // Add search filter if provided
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { subName: { contains: search } },
+          { brand: { contains: search } },
+          { kode: { contains: search } },
+        ];
+      }
+
+      try {
+        // Get categories with pagination and filters
+        const [categories, totalCount] = await Promise.all([
+          ctx.prisma.categories.findMany({
+            where,
+            take,
+            skip,
+            orderBy: {
+              createdAt: 'desc',
+            },
+          }),
+          ctx.prisma.categories.count({ where }),
+        ]);
+
+        // Calculate pagination metadata
+        const totalPages = Math.ceil(totalCount / take);
+
+        return {
+          data: categories,
+          pagination: {
+            page,
+            perPage,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
+        throw new Error('Failed to fetch categories');
+      }
+    }),
   getCategoriesPopular: publicProcedure.query(async ({ ctx }) => {
     try {
       const categories = await ctx.prisma.categories.findMany({
@@ -115,17 +244,35 @@ export const mainRouter = router({
       throw new Error('failed to fetch categories popular');
     }
   }),
-  getCategories: publicProcedure.query(async ({ ctx }) => {
-    try {
-      const categories = await ctx.prisma.categories.findMany();
-      return {
-        statusCode: 200,
-        message: 'Categories fetched successfully',
-        data: categories,
-      };
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw new Error('Failed to fetch categories');
-    }
-  }),
+  getCategories: publicProcedure
+    .input(
+      z.object({
+        fields: z.array(z.string()).optional(), // Optional array of fields to select
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        // Determine which fields to select
+        const selectedFields = input.fields?.length
+          ? input.fields.reduce((acc, field) => {
+              acc[field] = true;
+              return acc;
+            }, {} as Record<string, boolean>)
+          : undefined;
+
+        // Fetch categories with conditional selection
+        const categories = await ctx.prisma.categories.findMany({
+          select: selectedFields || undefined, // Use selected fields or fetch all
+        });
+
+        return {
+          statusCode: 200,
+          message: 'Categories fetched successfully',
+          data: categories,
+        };
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        throw new Error('Failed to fetch categories');
+      }
+    }),
 });
