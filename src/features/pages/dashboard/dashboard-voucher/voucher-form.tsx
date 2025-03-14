@@ -1,5 +1,4 @@
 'use client';
-
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -22,15 +21,17 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { MultiSelect } from './multi-select';
-import type { createVoucherSchema } from '@/types/schema/voucher';
+import { createVoucherSchema } from '@/types/schema/voucher';
 import { Label } from '@/components/ui/label';
 import { trpc } from '@/utils/trpc';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Voucher } from '@/types/voucher';
 
 interface VoucherFormProps {
-  initialData?: z.infer<typeof createVoucherSchema>;
+  initialData?: Voucher;
   onSuccess?: () => void;
 }
 
@@ -50,9 +51,9 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
       toast.error('failed to create voucher');
     },
   });
-  const { mutate: update, isLoading } = trpc.voucher.update.useMutation();
+  const { mutate: update, isPending: updatePending } =
+    trpc.voucher.update.useMutation();
 
-  // Create default dates as Date objects
   const defaultStartDate = new Date();
   const defaultExpiryDate = new Date();
   defaultExpiryDate.setMonth(defaultExpiryDate.getMonth() + 1);
@@ -64,36 +65,52 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
     setValue,
     formState: { errors },
   } = useForm<z.infer<typeof createVoucherSchema>>({
-    defaultValues: initialData || {
-      code: '',
-      discountType: 'PERCENTAGE',
-      discountValue: 0,
-      maxDiscount: null,
-      minPurchase: null,
-      usageLimit: null,
-      isForAllCategories: false,
-      isActive: true,
-      startDate: new Date(),
-      expiryDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-      description: '',
+    resolver: zodResolver(createVoucherSchema),
+    defaultValues: {
+      code: initialData?.code ?? '',
+      discountType: initialData?.discountType ?? 'PERCENTAGE',
+      discountValue: initialData?.discountValue ?? 0,
+      maxDiscount: initialData?.maxDiscount ?? null,
+      minPurchase: initialData?.minPurchase ?? null,
+      usageLimit: initialData?.usageLimit ?? null,
+      isForAllCategories: initialData?.isForAllCategories ?? false,
+      isActive: initialData?.isActive ?? true,
+      startDate: new Date(initialData?.startDate as string) ?? new Date(),
+      expiryDate:
+        new Date(initialData?.expiryDate as string) ??
+        new Date(new Date().setMonth(new Date().getMonth() + 1)),
+      description: initialData?.description ?? '',
       categoryIds: [],
     },
   });
-
   function onSubmit(values: z.infer<typeof createVoucherSchema>) {
     try {
-      // Create a new object with the same values
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const startDate =
+        values.startDate instanceof Date
+          ? values.startDate
+          : new Date(values.startDate);
+
+      const expiryDate =
+        values.expiryDate instanceof Date
+          ? values.expiryDate
+          : new Date(values.expiryDate);
+
+      if (startDate < today) {
+        toast.error('Start date tidak boleh hari kemarin');
+        return;
+      }
+
+      if (expiryDate < startDate) {
+        toast.error('expiry date harus lebih besok dari start date');
+        return;
+      }
       const formattedValues = {
         ...values,
-        // Convert string dates to Date objects
-        startDate:
-          values.startDate instanceof Date
-            ? values.startDate
-            : new Date(values.startDate),
-        expiryDate:
-          values.expiryDate instanceof Date
-            ? values.expiryDate
-            : new Date(values.expiryDate),
+        startDate,
+        expiryDate,
       };
 
       const submissionData = {
@@ -101,10 +118,16 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
         startDate: formattedValues.startDate.toISOString(),
         expiryDate: formattedValues.expiryDate.toISOString(),
       };
+
       if (initialData) {
-        update(submissionData);
+        update({
+          data: submissionData,
+          id: initialData.id,
+        });
+        toast.success('update successfully');
       } else {
         mutate(submissionData);
+        toast.success('create successfully');
       }
     } catch (error) {
       console.error('Error formatting form data:', error);
@@ -118,10 +141,17 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
     setValue('discountType', checked ? 'PERCENTAGE' : 'FIXED');
   };
 
+  const isLoading = initialData ? updatePending : isPending;
+
   const formatDateSafely = (date: Date | string | null | undefined) => {
     if (!date) return '';
     try {
-      return format(new Date(date), 'PPP');
+      // Convert string "Invalid Date" to empty string
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        return 'Invalid date';
+      }
+      return format(dateObj, 'PPP');
     } catch (e) {
       console.error('Date formatting error:', e);
       return 'Invalid date';
@@ -343,6 +373,11 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
                           setValue('startDate', new Date(date));
                         }
                       }}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
                       initialFocus
                     />
                   </PopoverContent>
@@ -388,6 +423,17 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
                         if (date) {
                           setValue('expiryDate', new Date(date));
                         }
+                      }}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        const startDate =
+                          watch('startDate') instanceof Date
+                            ? watch('startDate')
+                            : new Date(watch('startDate') || defaultStartDate);
+
+                        return date < today || date < startDate;
                       }}
                       initialFocus
                     />
@@ -483,7 +529,7 @@ export function VoucherForm({ initialData, onSuccess }: VoucherFormProps) {
           <Button type="button" variant="outline" onClick={onSuccess}>
             Batal
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isLoading}>
             {initialData ? 'Perbarui Voucher' : 'Buat Voucher'}
           </Button>
         </div>

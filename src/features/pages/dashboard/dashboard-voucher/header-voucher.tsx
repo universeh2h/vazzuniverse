@@ -34,11 +34,11 @@ import { VoucherForm } from './voucher-form';
 
 interface HeaderVoucherProps {
   onChange: (term: string) => void;
+  setActiveTab: (active: string) => void;
 }
 
-export function HeaderVoucher({ onChange }: HeaderVoucherProps) {
+export function HeaderVoucher({ onChange, setActiveTab }: HeaderVoucherProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handleSearch = (value: string) => {

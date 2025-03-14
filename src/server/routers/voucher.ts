@@ -1,7 +1,4 @@
-import {
-  createVoucherSchema,
-  updateVoucherSchema,
-} from '@/types/schema/voucher';
+import { createVoucherSchema } from '@/types/schema/voucher';
 import { publicProcedure, router } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -12,6 +9,7 @@ export const voucher = router({
     .input(
       z.object({
         code: z.string().optional(),
+        category: z.string().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -21,8 +19,25 @@ export const voucher = router({
         if (input.code) {
           where.code = { contains: input.code };
         }
+
+        const today = new Date();
+
+        if (input.category === 'active') {
+          where.startDate = { lte: today };
+          where.expiryDate = { gte: today };
+          where.isActive = true;
+        } else if (input.category === 'upcoming') {
+          where.startDate = { gt: today };
+        } else if (input.category === 'expired') {
+          where.expiryDate = { lt: today };
+        }
+
         return await ctx.prisma.voucher.findMany({
           where,
+          orderBy: {
+            // Optional: you might want to order the results
+            createdAt: 'desc',
+          },
         });
       } catch (error) {
         if (error instanceof TRPCError) {
@@ -101,17 +116,74 @@ export const voucher = router({
       }
     }),
   update: publicProcedure
-    .input(updateVoucherSchema)
+    .input(
+      z.object({
+        id: z.number(),
+        data: createVoucherSchema,
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       try {
-        return await ctx.prisma.voucher.update({
+        const parsedInput = {
+          ...input.data,
+          startDate:
+            input.data.startDate instanceof Date
+              ? input.data.startDate
+              : new Date(input.data.startDate as string),
+          expiryDate:
+            input.data.expiryDate instanceof Date
+              ? input.data.expiryDate
+              : new Date(input.data.expiryDate as string),
+        };
+        const {
+          code,
+          discountType,
+          discountValue,
+          expiryDate,
+          isActive,
+          isForAllCategories,
+          startDate,
+          categoryIds,
+          description,
+          maxDiscount,
+          minPurchase,
+          usageLimit,
+        } = parsedInput;
+
+        const data = await ctx.prisma.voucher.update({
           where: {
             id: input.id,
           },
           data: {
-            ...input,
+            code,
+            discountType,
+            discountValue,
+            expiryDate,
+            isActive,
+            maxDiscount,
+            description,
+            startDate,
+            isForAllCategories,
+            usageLimit,
+            minPurchase,
           },
         });
+
+        if (categoryIds) {
+          const categoryId = Promise.all(
+            categoryIds.map(async (p) => {
+              await ctx.prisma.voucherCategory.create({
+                data: {
+                  categoryId: p,
+                  voucherId: data.id,
+                },
+              });
+            })
+          );
+
+          return categoryId;
+        }
+        return data;
       } catch (error) {
         if (error instanceof TRPCError) {
           console.error(error.message);

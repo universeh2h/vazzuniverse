@@ -6,11 +6,7 @@ export const voucherSchema = z.object({
     .string()
     .min(1, 'Voucher code is required')
     .max(50, 'Voucher code must be 50 characters or less'),
-  discountType: z.enum(['PERCENTAGE', 'FIXED'], {
-    errorMap: () => ({
-      message: "Discount type must be either 'PERCENTAGE' or 'FIXED'",
-    }),
-  }),
+  discountType: z.string(),
   discountValue: z.number().positive('Discount value must be greater than 0'),
   maxDiscount: z
     .number()

@@ -16,6 +16,7 @@ import { VoucherCards } from './voucher-cards';
 export function VoucherPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('all');
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -30,11 +31,15 @@ export function VoucherPage() {
 
   const { data, isLoading } = trpc.voucher.getAll.useQuery({
     code: debouncedSearchTerm,
+    category: activeTab,
   });
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <HeaderVoucher onChange={handleSearchChange} />
+      <HeaderVoucher
+        onChange={handleSearchChange}
+        setActiveTab={setActiveTab}
+      />
 
       <div className="m-8">
         <h2 className="text-2xl font-bold mb-4">Available Vouchers</h2>
