@@ -34,10 +34,10 @@ export function useMidtransPayment() {
 
     try {
       const response = await axios.post<PaymentDetails>(
-        '/api/midtrans/payment',
+        '/api/payment/initiate',
         orderDetails
       );
-      const url = `/invoice/${response.data.transactionId}`;
+      const url = `/payment/status?merchantOrderId=${response.data.merchantOrderId}`;
       push(url);
       return response.data;
     } catch (err: any) {

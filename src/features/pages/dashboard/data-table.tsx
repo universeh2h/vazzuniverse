@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Clock,
   Download,
-  ExternalLink,
   Eye,
   FileText,
   MoreHorizontal,
@@ -36,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/utils/trpc';
+import { FormatPrice } from '@/utils/formatPrice';
 
 // Definisikan tipe data transaksi
 interface Transaction {
@@ -49,8 +49,9 @@ interface Transaction {
   noWa: string;
   createdAt: string;
   updatedAt: string | null;
-  layananId: number;
-  categoryId: number;
+  userId: string | null;
+  layananId: number | null;
+  categoryId: number | null;
   layanan: {
     layanan: string;
   };
@@ -60,6 +61,7 @@ interface Transaction {
     totalAmount: number;
     status: 'PAID' | 'UNPAID' | 'CANCELLED';
   }[];
+  transactionType: string;
 }
 
 // Kolom untuk tabel transaksi
@@ -97,11 +99,8 @@ const columns: ColumnDef<Transaction>[] = [
     header: 'Amount',
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('finalAmount'));
-      const formatted = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-      }).format(amount);
-      return <div className="font-medium">{formatted}</div>;
+
+      return <div className="font-medium">{FormatPrice(amount)}</div>;
     },
   },
   {
@@ -111,6 +110,12 @@ const columns: ColumnDef<Transaction>[] = [
       const status = row.getValue('paymentStatus') as string;
       return (
         <div className="flex items-center">
+          {status === 'SUCCESS' && (
+            <Badge className="bg-green-500">
+              <CheckCircle2 className="mr-1 h-3 w-3" />
+              Success
+            </Badge>
+          )}
           {status === 'PAID' && (
             <Badge className="bg-green-500">
               <CheckCircle2 className="mr-1 h-3 w-3" />

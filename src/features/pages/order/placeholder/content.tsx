@@ -14,8 +14,8 @@ export function PlaceholderContent({ category }: { category: Category }) {
     category.placeholder2 !== '2';
 
   return (
-    <div className="flex flex-col space-y-4 w-full ">
-      <div className="flex flex-col space-y-2">
+    <div className="flex justify-between space-y-4 gap-4 w-full ">
+      <div className="flex flex-col space-y-2 w-full">
         <label className="text-sm font-medium text-gray-200 flex items-center gap-2">
           {category.placeholder1}
           {category.placeholder1 === 'User ID' && (
@@ -33,7 +33,7 @@ export function PlaceholderContent({ category }: { category: Category }) {
       </div>
 
       {hasSecondInput && (
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 w-full">
           <label className="text-sm font-medium text-gray-200 flex items-center gap-2">
             {category.placeholder2}
             {category.placeholder2 === 'Server' && (

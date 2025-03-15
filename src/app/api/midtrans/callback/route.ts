@@ -168,14 +168,20 @@ export async function POST(req: NextRequest) {
 
     // Send response back to Midtrans
     return NextResponse.json({ status: 'ok' });
-  } catch (error: any) {
-    console.error('Error processing Midtrans callback:', error);
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: error.message || 'Internal server error',
-      },
-      { status: 500 }
-    );
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error('Error processing Midtrans callback:', error);
+      return NextResponse.json(
+        {
+          status: false,
+          message: error.message,
+        },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({
+      status: false,
+      message: 'Internal server error',
+    });
   }
 }

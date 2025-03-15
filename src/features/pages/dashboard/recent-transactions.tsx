@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { TransactionWithUser } from '@/types/transaction';
-import { formatDate } from '@/utils/formatPrice';
+import { formatDate, FormatPrice } from '@/utils/formatPrice';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 export function RecentTransactions({
@@ -28,16 +28,13 @@ export function RecentTransactions({
             {transaction?.user?.name}
           </div>
           <div className="text-sm text-muted-foreground">
-            {transaction.layanan.layanan} - {transaction.category.name}
+            {transaction.layananName} - {transaction.categoryName}
           </div>
         </div>
       </div>
       <div className="flex flex-col items-end gap-1">
         <div className="font-medium text-card-foreground">
-          {new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-          }).format(transaction.finalAmount)}
+          {FormatPrice(transaction.finalAmount)}
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">

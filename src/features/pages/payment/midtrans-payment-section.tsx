@@ -41,7 +41,7 @@ export function PaymentsSection({
     if (!amount) return;
 
     setSelectPayment({
-      code: method.paymentCodeMidtrans as string,
+      code: method.code as string,
       price: amount,
       name: method.name,
       type: method.paymentType as string,
@@ -53,7 +53,6 @@ export function PaymentsSection({
     setActiveType(type === activeType ? null : type);
   };
 
-  // Common section structure for both with and without amount
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
@@ -225,8 +224,7 @@ export function PaymentsSection({
                               )}
                             </motion.div>
 
-                            {selectPayment?.code ===
-                              method.paymentCodeMidtrans && (
+                            {selectPayment?.code === method.code && (
                               <motion.div
                                 className="absolute top-2 right-2"
                                 initial={{ scale: 0, opacity: 0 }}

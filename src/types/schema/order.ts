@@ -9,6 +9,7 @@ export const orderSchema = z.object({
   discountAmount: z.number().default(0),
   finalAmount: z.number(),
   voucherId: z.number().nullable().optional(),
+  transactionType: z.string(),
   paymentStatus: z.string(),
   paymentCode: z.string(),
   paymentReference: z.string().nullable().optional(),

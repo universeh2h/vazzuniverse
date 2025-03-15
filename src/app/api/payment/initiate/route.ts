@@ -3,18 +3,14 @@ import crypto from 'crypto';
 import axios from 'axios';
 import { auth } from '../../../../../auth';
 import { prisma } from '@/lib/prisma';
-
-const MERCHANT_CODE = '9ecc7819ac45c6f63e4351e0329dc123';
-const API_KEY = 'D16328';
-const BASE_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'https://passport.duitku.com/webapi'
-    : 'https://sandbox.duitku.com/webapi';
-const CALLBACK_URL =
-  'https://67e9-2001-448a-2012-25ed-6aa5-4848-6b37-2107.ngrok-free.app/api/payment/callback';
-const RETURN_URL =
-  'https://67e9-2001-448a-2012-25ed-6aa5-4848-6b37-2107.ngrok-free.app/payment/check-status';
-const EXPIRY_PERIOD = 60 * 24;
+import {
+  DUITKU_BASE_URL,
+  DUITKU_CALLBACK_URL,
+  DUITKU_EXPIRY_PERIOD,
+  DUITKU_MERCHANT_CODE,
+  DUITKU_RETURN_URL,
+  DUTIKU_API_KEY,
+} from '../types';
 
 export type RequestPayment = {
   noWa: string;
@@ -73,8 +69,6 @@ export async function POST(req: NextRequest) {
       price = productDetails.hargaFlashSale || 0;
     } else if (session?.user?.role === 'platinum') {
       price = productDetails.hargaPlatinum;
-    } else if (session?.user?.role === 'gold') {
-      price = productDetails.hargaGold;
     } else {
       price = productDetails.harga;
     }
@@ -162,7 +156,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate environment variables
-    if (!MERCHANT_CODE || !API_KEY) {
+    if (!DUITKU_MERCHANT_CODE || !DUTIKU_API_KEY) {
       console.error('Missing Duitku configuration');
       return NextResponse.json(
         {
@@ -174,30 +168,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate signature
-    const merchantOrderId = 'ORD-' + Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const merchantOrderId = 'ORD-' + Date.now() + '-' + randomStr;
 
     // Updated signature generation
-    const priceForSignature = Math.floor(price); // Jika perlu bulatkan ke bawah
     // atau
-    // const priceForSignature = price.toFixed(0); // Jika perlu format tanpa desimal
-
-    // Generate signature - tambahkan log untuk debugging
-    const rawSignature =
-      MERCHANT_CODE + merchantOrderId + priceForSignature + API_KEY;
-    console.log('Raw signature input:', rawSignature);
 
     // Prepare transaction data
     const transactionData = {
       merchantOrderId,
       layananId: productDetails.id,
       categoryId: categoryDetails.id,
+      transactionType: 'Top-up',
       originalAmount: productDetails.harga,
       discountAmount,
       finalAmount: price,
       paymentStatus: 'PENDING',
       paymentCode,
       noWa,
-      createdAt: new Date(),
     };
 
     // Add userId only if a user is logged in
@@ -211,7 +199,7 @@ export async function POST(req: NextRequest) {
         Object.assign(transactionData, { userId: session.user.id });
       }
     }
-
+    console.log(transactionData);
     // Add voucher only if it was applied
     if (appliedVoucherId) {
       Object.assign(transactionData, { voucherId: appliedVoucherId });
@@ -219,7 +207,10 @@ export async function POST(req: NextRequest) {
 
     // Create transaction record
     const transaction = await prisma.transaction.create({
-      data: transactionData,
+      data: {
+        ...transactionData,
+        transactionType: 'Top up',
+      },
     });
 
     // If voucher is applied, increment its usage count
@@ -236,11 +227,13 @@ export async function POST(req: NextRequest) {
     // Updated signature generation
     const signature = crypto
       .createHash('md5')
-      .update(MERCHANT_CODE + merchantOrderId + paymentAmount + API_KEY)
+      .update(
+        DUITKU_MERCHANT_CODE + merchantOrderId + paymentAmount + DUTIKU_API_KEY
+      )
       .digest('hex');
 
     const payload = {
-      merchantCode: MERCHANT_CODE,
+      merchantCode: DUITKU_MERCHANT_CODE,
       paymentAmount: paymentAmount,
       merchantOrderId: merchantOrderId,
       productDetails: 'Pembayaran #' + merchantOrderId,
@@ -248,17 +241,17 @@ export async function POST(req: NextRequest) {
       paymentMethod: paymentCode,
       customerVaName: 'vazzuniverse',
       phoneNumber: noWa,
-      returnUrl: `${RETURN_URL}/${merchantOrderId}`,
-      callbackUrl: CALLBACK_URL,
+      returnUrl: `${DUITKU_RETURN_URL}`,
+      callbackUrl: DUITKU_CALLBACK_URL,
       signature: signature,
-      expiryPeriod: EXPIRY_PERIOD,
+      expiryPeriod: DUITKU_EXPIRY_PERIOD,
     };
 
     console.log('Sending payload to Duitku:', payload);
 
     try {
       const response = await axios.post(
-        `${BASE_URL}/api/merchant/v2/inquiry`,
+        `${DUITKU_BASE_URL}/api/merchant/v2/inquiry`,
         payload,
         {
           headers: {
@@ -287,52 +280,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Update transaction with payment reference
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          paymentReference: data.reference,
-          paymentUrl: data.paymentUrl,
-          paymentStatus: data.statusMessage,
-        },
-      });
-
-      // Return appropriate data based on payment method
-      if (
-        ['DA', 'SA', 'OV', 'OL', 'LA', 'FT', 'NQ', 'SP'].includes(paymentCode)
-      ) {
-        return {
-          success: true,
-          paymentUrl: data.paymentUrl,
-          reference: data.reference,
-          amount: data.amount || paymentAmount,
-          data: data,
-          statusCode: data.statusCode,
-          statusMessage: data.statusMessage,
-          merchantOrderId: merchantOrderId,
-          transactionId: transaction.id,
-        };
-      } else {
-        return {
-          success: true,
-          no_pembayaran: data.vaNumber,
-          reference: data.reference,
-          amount: data.amount || paymentAmount,
-          data: data,
-          statusCode: data.statusCode,
-          statusMessage: data.statusMessage,
-          merchantOrderId: merchantOrderId,
-          transactionId: transaction.id,
-        };
-      }
-
-      // Update transaction with payment reference
       if (data.statusCode === '00') {
         await prisma.transaction.update({
           where: { id: transaction.id },
           data: {
             paymentReference: data.reference,
             paymentUrl: data.paymentUrl,
-            paymentStatus: data.statusMessage,
           },
         });
 
@@ -345,7 +298,6 @@ export async function POST(req: NextRequest) {
           transactionId: transaction.id,
         });
       } else {
-        // Update transaction status to failed
         await prisma.transaction.update({
           where: { id: transaction.id },
           data: {
@@ -362,6 +314,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (apiError: any) {
       console.error('Duitku API error:', apiError.message);
       console.error('Response data:', apiError.response?.data);
@@ -385,14 +338,16 @@ export async function POST(req: NextRequest) {
         { status: apiError.response?.status || 500 }
       );
     }
-  } catch (error: any) {
-    console.error('Payment initiation error:', error);
+  } catch (error) {
+    console.error('Callback processing error:', error);
+
     return NextResponse.json(
       {
-        statusCode: '500',
-        statusMessage: error.message || 'Internal server error',
+        success: false,
+        message: 'Error processing callback',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }

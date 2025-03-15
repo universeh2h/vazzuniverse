@@ -9,7 +9,7 @@ import { Category, PlansProps, SubCategories } from '@/types/category';
 import { usePlansStore } from '@/hooks/use-select-plan';
 import { OrderPage } from './order';
 import { useEffect } from 'react';
-import { PaymentsSection } from '../payment/midtrans-payment-section';
+import { PaymentsSection } from '../payment/payment';
 
 export default function DetailsCategories({ name }: { name: string }) {
   const { data, isLoading } = trpc.main.getCategoriesByName.useQuery({

@@ -9,13 +9,13 @@ export const transaction = router({
   getTransaction: publicProcedure
     .input(
       z.object({
-        id: z.number(),
+        merchantOrderId: z.string(),
       })
     )
     .query(async ({ ctx, input }) => {
       return await ctx.prisma.transaction.findUnique({
         where: {
-          id: input.id,
+          merchantOrderId: input.merchantOrderId,
         },
         include: {
           invoice: true,
@@ -122,10 +122,17 @@ export const transaction = router({
     .input(
       z.object({
         limit: z.number().optional(),
+        type: z.enum(['ALL', 'PAYMENT', 'DEPOSIT', 'TOPUP']).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      return await ctx.prisma.transaction.findMany({
+      const where =
+        input.type && input.type !== 'ALL'
+          ? { transactionType: input.type }
+          : {};
+
+      const data = await ctx.prisma.transaction.findMany({
+        where,
         take: input.limit ?? 10,
         orderBy: {
           createdAt: 'desc',
@@ -151,8 +158,22 @@ export const transaction = router({
           },
         },
       });
-    }),
 
+      return data.map((transaction) => ({
+        ...transaction,
+        layananName:
+          transaction.layanan?.layanan ??
+          (transaction.transactionType === 'DEPOSIT'
+            ? 'Deposit Saldo'
+            : transaction.transactionType === 'TOPUP'
+            ? 'Top-up Manual'
+            : 'Transaksi Manual'),
+        categoryName: transaction.category?.name ?? 'Lainnya',
+        isManual:
+          !transaction.layananId ||
+          ['DEPOSIT', 'TOPUP'].includes(transaction.transactionType),
+      }));
+    }),
   getTransactionStats: publicProcedure
     .input(
       z

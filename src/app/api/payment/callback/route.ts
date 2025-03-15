@@ -1,25 +1,21 @@
-// app/api/payment/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { DUITKU_MERCHANT_CODE, DUTIKU_API_KEY } from '../types';
+import { DUITKU_MERCHANT_CODE } from '../types';
+import { getStatusMessage } from '../helpers';
 
 export async function POST(req: NextRequest) {
   try {
     // Get callback data from Duitku
     let callbackData;
 
-    // Try to parse as JSON first
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
       callbackData = await req.json();
     } else {
-      // Handle form data
       const formData = await req.formData();
       callbackData = Object.fromEntries(formData.entries());
 
-      // Convert amount to string if it exists (to match expected format)
       if (callbackData.amount) {
         callbackData.amount = callbackData.amount.toString();
       }
@@ -30,13 +26,12 @@ export async function POST(req: NextRequest) {
 
     // Extract important fields
     const {
-      wwmerchantCode,
+      merchantCode,
       merchantOrderId,
       amount,
       signature,
       resultCode,
       reference,
-      settlementDate,
     } = callbackData;
 
     // Validate required fields
@@ -63,23 +58,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate signature
-    const expectedSignature = crypto
-      .createHash('md5')
-      .update(
-        merchantCode + merchantOrderId + amount + resultCode + DUTIKU_API_KEY
-      )
-      .digest('hex');
-
-    if (signature !== expectedSignature) {
-      console.error('Invalid signature');
-      return NextResponse.json(
-        { success: false, message: 'Invalid signature' },
-        { status: 400 }
-      );
-    }
-
-    // Get transaction by merchantOrderId
     const transaction = await prisma.transaction.findUnique({
       where: { merchantOrderId },
     });
@@ -92,19 +70,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get deposit ID from merchantOrderId (assuming format: DEP-{depositId}-{timestamp})
     const depositIdMatch = merchantOrderId.match(/^DEP-(\d+)-/);
+    const orderTopUp = merchantOrderId.match(/^ORD-(\d+)-/);
     const depositId = depositIdMatch ? parseInt(depositIdMatch[1]) : null;
 
-    if (!depositId) {
-      console.error('Could not extract deposit ID from:', merchantOrderId);
-      return NextResponse.json(
-        { success: false, message: 'Invalid order ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Map Duitku result code to payment status
     let paymentStatus = 'PENDING';
     if (resultCode === '00' || resultCode === '0') {
       paymentStatus = 'SUCCESS';
@@ -121,7 +90,7 @@ export async function POST(req: NextRequest) {
         paymentStatus,
         paymentReference: reference || transaction.paymentReference,
         statusMessage: getStatusMessage(resultCode),
-        updatedAt: settlementDate || null,
+        updatedAt: new Date(),
       },
     });
 
@@ -131,15 +100,12 @@ export async function POST(req: NextRequest) {
         where: { id: depositId },
         data: { status: paymentStatus },
       });
-
-      // If payment is successful, you might want to update user balance
       if (paymentStatus === 'SUCCESS') {
         const deposit = await prisma.deposits.findUnique({
           where: { id: depositId },
         });
 
         if (deposit) {
-          // Update user balance (assuming you have a balance field in your user model)
           await prisma.users.update({
             where: { id: deposit.userId },
             data: {
@@ -148,11 +114,33 @@ export async function POST(req: NextRequest) {
               },
             },
           });
-
-          // You could also log this transaction in a separate table if needed
-          // await prisma.balanceHistory.create({ ... })
         }
       }
+    }
+
+    if (orderTopUp) {
+      const userId =
+        transaction.userId || `guest_${transaction.merchantOrderId}`;
+
+      await prisma.users.findUnique({
+        where: { id: userId },
+      });
+
+      await prisma.invoices.create({
+        data: {
+          invoiceNumber: `INV-${merchantOrderId}`,
+          transactionId: transaction.id,
+          userId,
+          subtotal: transaction.originalAmount,
+          discountAmount: transaction.discountAmount,
+          totalAmount: transaction.finalAmount,
+          status: 'PAID',
+          dueDate: new Date(),
+          paymentDate: new Date(),
+          notes: `Payment for service ID: ${transaction.layananId}`,
+          termsAndConditions: 'Standard terms and conditions apply.',
+        },
+      });
     }
 
     // Return success response to Duitku
@@ -160,8 +148,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Callback processing error:', error);
 
-    // Always return 200 status to Duitku even if there's an error
-    // This prevents Duitku from retrying the callback repeatedly
     return NextResponse.json(
       {
         success: false,
@@ -170,22 +156,5 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  }
-}
-
-// Helper function to get a readable status message
-function getStatusMessage(resultCode: string): string {
-  switch (resultCode) {
-    case '00':
-    case '0':
-      return 'Pembayaran Berhasil';
-    case '01':
-      return 'Pembayaran Pending';
-    case '02':
-      return 'Pembayaran Gagal';
-    case '03':
-      return 'Pembayaran Expired';
-    default:
-      return 'Status Tidak Diketahui';
   }
 }

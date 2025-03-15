@@ -20,6 +20,8 @@ export type TypePlansStore = {
   selectPlans: PlansProps | null;
   userID: string | null;
   serverID: string | null;
+  voucher: string;
+  setVoucher: (voucher: string) => void;
   categories: Category | null;
   setCategories: (cat: Category | null) => void;
   setUserId: (userid: string | null) => void;
@@ -36,6 +38,8 @@ export const usePlansStore = create<TypePlansStore>((set) => ({
   userID: null,
   serverID: null,
   categories: null,
+  voucher: '',
+  setVoucher: (voucher: string) => set({ voucher }),
   setCategories: (cat: Category | null) => set({ categories: cat }),
   setUserId: (userid: string | null) => set({ userID: userid }),
   setServerId: (serverId: string | null) => set({ serverID: serverId }),

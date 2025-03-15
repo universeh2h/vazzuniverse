@@ -15,7 +15,7 @@ model Users  {
   username   String  @unique
   password  String  
   whatsapp  String  @db.VarChar(50) 
-  balance   Decimal @default(0)
+  balance   Int @default(0)
   apiKey    String?   @map("api_key")
   otp    String?  
   role   String   @db.VarChar(50)
@@ -163,8 +163,7 @@ model Layanan {
   productLogo      String?  @map("product_logo")
   createdAt        DateTime? @default(now())  @map("created_at")
   updatedAt        DateTime? @updatedAt  @map("updated_at")
-    transaction  Transaction[]
-
+  transaction  Transaction[]
   @@map("layanans")
 }
 model Voucher {
@@ -213,7 +212,7 @@ model Transaction {
   discountAmount    Float     @default(0) @map("discount_amount")
   finalAmount       Float     @map("final_amount")
   voucherId         Int?      @map("voucher_id")
-  qrString   String?  @map("qr_string")
+  qrString          String?  @map("qr_string")
   paymentStatus     String    @map("payment_status") 
   paymentCode       String    @map("payment_code")
   paymentReference  String?   @map("payment_reference")
@@ -223,12 +222,8 @@ model Transaction {
   completedAt       DateTime? @map("completed_at")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime? @updatedAt @map("updated_at")
-
-  topUpStatus       String?   @map("top_up_status") 
-  topUpReference    String?   @map("top_up_reference")
-  topUpMessage      String?   @map("top_up_message")
-  topUpProcessedAt  DateTime? @map("top_up_processed_at")
-  invoice    Invoices[]
+  transactionType    String    @map("transaction_type")
+  invoice           Invoices[]
 
   user              Users?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   layanan           Layanan?   @relation(fields: [layananId], references: [id])
@@ -239,7 +234,6 @@ model Transaction {
   @@index([userId])
   @@index([paymentStatus])
   @@index([voucherId])
-  @@index([topUpStatus]) 
   @@map("transactions")
 
 }

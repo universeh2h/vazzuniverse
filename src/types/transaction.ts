@@ -1,9 +1,40 @@
+import { Check, CreditCard, Package, Loader2 } from 'lucide-react';
+
+// Assuming FLOWTRANSACTION is a type with these possible values
+export type FLOWTRANSACTION = 'PENDING' | 'PAID' | 'PROCESS' | 'SUCCESS';
+export const stepsTransaction = [
+  {
+    id: 'PENDING',
+    label: 'Transaksi telah Dibuat',
+    description: 'Transaksi telah berhasil dibuat',
+    icon: Check,
+  },
+  {
+    id: 'PAID',
+    label: 'Pembayaran',
+    description: 'Silahkan melakukan pembayaran',
+    icon: CreditCard,
+  },
+  {
+    id: 'PROCESS',
+    label: 'Sedang Di Proses',
+    description: 'Pembelian sedang dalam proses',
+    icon: Loader2,
+  },
+  {
+    id: 'SUCCESS',
+    label: 'Transaksi Selesai',
+    description: 'Transaksi telah Berhasil Dilakukan',
+    icon: Package,
+  },
+];
+
 export interface Transaction {
   id: number;
   merchantOrderId: string;
   userId: string | null;
-  layananId: number;
-  categoryId: number;
+  layananId: number | null;
+  categoryId: number | null;
   originalAmount: number;
   discountAmount: number;
   finalAmount: number;
@@ -12,24 +43,24 @@ export interface Transaction {
   paymentCode: string;
   paymentReference: string | null;
   paymentUrl: string | null;
+  layananName: string;
   noWa: string;
   statusMessage: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string | null;
-  topUpStatus: string | null;
-  topUpReference: string | null;
-  topUpMessage: string | null;
-  topUpProcessedAt: string | null;
+  qrString: string | null;
+  transactionType: string;
+  categoryName: string;
 }
 
 export type TransactionWithUser = Transaction & {
   layanan: {
-    layanan: string;
-  };
+    layanan: string | null;
+  } | null; // Allow layanan to be null
   category: {
-    name: string;
-  };
+    name: string | null;
+  } | null;
   user: {
     name: string | null;
     username: string;
@@ -37,7 +68,47 @@ export type TransactionWithUser = Transaction & {
     whatsapp: string;
   } | null;
 };
+export type Invoice = {
+  id: number;
+  invoiceNumber: string;
+  notes: string;
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  dueDate: string;
+  paymentDate: string;
+  status: 'PAID' | 'PENDING' | 'FAILED';
+  transactionId: number;
+  termsAndConditions: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+};
 
+export type TransactionDetailsType = {
+  id: number;
+  categoryId: number;
+  layananId: number;
+  merchantOrderId: string;
+  noWa: string;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paymentCode: string;
+  paymentReference: string;
+  paymentStatus: 'SUCCESS' | 'PENDING' | 'FAILED' | 'PAID';
+  paymentUrl: string;
+  qrString: string | null;
+  statusMessage: string;
+  transactionType: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  voucherId: string | null;
+  invoice: Invoice[];
+};
 export type TransactionAll = {
   totalCount: number;
   transactions: TransactionWithUser[];

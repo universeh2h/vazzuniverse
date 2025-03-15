@@ -14,13 +14,18 @@ import { useMidtransPayment } from '@/hooks/use-payment';
 import { usePlansStore } from '@/hooks/use-select-plan';
 import { Loader2 } from 'lucide-react';
 import { FormatPrice } from '@/utils/formatPrice';
+import { trpc } from '@/utils/trpc';
 
 export function DialogPayment() {
-  const { selectPlans, selectPayment, noWa } = usePlansStore();
+  const { selectPlans, selectPayment, noWa, voucher } = usePlansStore();
   const payment = useMidtransPayment();
   const [isLoading, setIsLoading] = useState(false);
   const [paymentUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const {} = trpc.voucher.validationVoucher.useQuery({
+    code,
+  });
   const handlePayment = async () => {
     if (!noWa || !selectPayment?.code || !selectPlans) {
       setError('Missing required payment information');

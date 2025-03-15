@@ -210,4 +210,217 @@ export const voucher = router({
         throw error;
       }
     }),
+  validateVoucher: publicProcedure
+    .input(
+      z.object({
+        code: z.string(),
+        categoryId: z.string(),
+        amount: z.number(), // Jumlah pembelian untuk validasi minPurchase
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const currentDate = new Date();
+
+        // Cari voucher dengan kriteria yang sesuai
+        const voucher = await ctx.prisma.voucher.findFirst({
+          where: {
+            code: input.code,
+            isActive: true,
+            startDate: { lte: currentDate },
+            expiryDate: { gte: currentDate },
+            AND: [
+              {
+                OR: [
+                  { isForAllCategories: true },
+                  {
+                    categories: {
+                      some: {
+                        categoryId: parseInt(input.categoryId),
+                      },
+                    },
+                  },
+                ],
+              },
+
+              {
+                // Validasi minimum purchase jika ada
+                OR: [
+                  { minPurchase: null },
+                  { minPurchase: { lte: input.amount } },
+                ],
+              },
+            ],
+          },
+          include: {
+            categories: {
+              select: {
+                categoryId: true,
+              },
+            },
+          },
+        });
+
+        if (!voucher) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message:
+              'Kode voucher tidak valid atau tidak berlaku untuk kategori ini',
+          });
+        }
+
+        // Hitung diskon yang akan diberikan
+        let discountAmount = 0;
+
+        if (voucher.discountType === 'percentage') {
+          discountAmount = (input.amount * voucher.discountValue) / 100;
+
+          // Terapkan max discount jika ada
+          if (voucher.maxDiscount && discountAmount > voucher.maxDiscount) {
+            discountAmount = voucher.maxDiscount;
+          }
+        } else if (voucher.discountType === 'fixed') {
+          discountAmount = voucher.discountValue;
+
+          // Diskon tidak boleh melebihi nilai pembelian
+          if (discountAmount > input.amount) {
+            discountAmount = input.amount;
+          }
+        }
+
+        // Format respons untuk preview
+        return {
+          success: true,
+          voucher: {
+            id: voucher.id,
+            code: voucher.code,
+            discountType: voucher.discountType,
+            discountValue: voucher.discountValue,
+            isForAllCategories: voucher.isForAllCategories,
+          },
+          discountAmount: parseFloat(discountAmount.toFixed(2)),
+          finalAmount: parseFloat((input.amount - discountAmount).toFixed(2)),
+          message: `Voucher berhasil diterapkan. Anda mendapatkan diskon sebesar ${
+            voucher.discountType === 'percentage'
+              ? `${voucher.discountValue}%`
+              : `Rp ${voucher.discountValue.toLocaleString('id-ID')}`
+          }`,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Terjadi kesalahan saat memvalidasi voucher',
+        });
+      }
+    }),
+
+  // Endpoint untuk menerapkan voucher pada transaksi
+  applyVoucher: publicProcedure
+    .input(
+      z.object({
+        code: z.string(),
+        categoryId: z.string(),
+        amount: z.number(),
+        transactionId: z.number().optional(), // Opsional, jika ingin menyimpan referensi
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Reuse validasi yang sama dengan validateVoucher
+        const validationResult = await ctx.prisma.$transaction(
+          async (prisma) => {
+            const currentDate = new Date();
+
+            // Cari dan lock voucher untuk mencegah race condition
+            const voucher = await prisma.voucher.findFirst({
+              where: {
+                code: input.code,
+                isActive: true,
+                startDate: { lte: currentDate },
+                expiryDate: { gte: currentDate },
+                AND: [
+                  {
+                    OR: [
+                      { isForAllCategories: true },
+                      {
+                        categories: {
+                          some: {
+                            categoryId: parseInt(input.categoryId),
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    OR: [
+                      { minPurchase: null },
+                      { minPurchase: { lte: input.amount } },
+                    ],
+                  },
+                ],
+              },
+            });
+
+            if (!voucher) {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message:
+                  'Kode voucher tidak valid atau tidak berlaku untuk kategori ini',
+              });
+            }
+
+            // Hitung diskon
+            let discountAmount = 0;
+
+            if (voucher.discountType === 'percentage') {
+              discountAmount = (input.amount * voucher.discountValue) / 100;
+
+              if (voucher.maxDiscount && discountAmount > voucher.maxDiscount) {
+                discountAmount = voucher.maxDiscount;
+              }
+            } else if (voucher.discountType === 'fixed') {
+              discountAmount = voucher.discountValue;
+
+              if (discountAmount > input.amount) {
+                discountAmount = input.amount;
+              }
+            }
+
+            // Jika ada transactionId, update transaksi dengan referensi voucher
+            if (input.transactionId) {
+              await prisma.transaction.update({
+                where: { id: input.transactionId },
+                data: {
+                  voucherId: voucher.id,
+                  discountAmount,
+                },
+              });
+            }
+
+            return {
+              voucherId: voucher.id,
+              discountAmount,
+              finalAmount: input.amount - discountAmount,
+            };
+          }
+        );
+
+        return {
+          success: true,
+          ...validationResult,
+          message: 'Voucher berhasil diterapkan pada transaksi',
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Terjadi kesalahan saat menerapkan voucher',
+        });
+      }
+    }),
 });

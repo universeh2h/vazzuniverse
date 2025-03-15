@@ -3,18 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { auth } from '../../../../../auth';
 import { findUserById } from '@/app/(auth)/_components/api';
-import {
-  DUITKU_BASE_URL,
-  DUITKU_CALLBACK_URL,
-  DUITKU_EXPIRY_PERIOD,
-  DUITKU_MERCHANT_CODE,
-  DUITKU_RETURN_URL,
-  DUTIKU_API_KEY,
-} from '../types';
+import { DUITKU_MERCHANT_CODE, DUTIKU_API_KEY } from '../types';
+import { Duitku } from '../duitku/DuitkuService';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const duitku = new Duitku();
     const { amount, code } = body;
     const session = await auth();
 
@@ -75,43 +70,22 @@ export async function POST(req: NextRequest) {
         finalAmount: amount,
         paymentStatus: 'PENDING',
         paymentCode: code,
+        transactionType: 'DEPOSIT',
         paymentUrl: null,
         noWa: user.whatsapp,
         statusMessage: null,
       },
     });
 
-    const duitkuPayload = {
-      merchantCode: DUITKU_MERCHANT_CODE,
-      merchantOrderId: merchantOrderId,
-      paymentAmount: amount,
-      paymentMethod: code,
+    const paymentData = await duitku.Create({
+      amount,
+      code,
+      merchantOrderId,
       productDetails: `Deposit for ${'wafiuddin'}`,
-      email: user.username + '@gmail.com',
-      customerVaName: 'wafiuddin',
-      callbackUrl: DUITKU_CALLBACK_URL,
-      returnUrl: DUITKU_RETURN_URL,
-      signature: signature,
-      expiryPeriod: DUITKU_EXPIRY_PERIOD,
-      additionalParam: '',
-      merchantUserInfo: '',
-      accountLink: '',
-      timestamp: timestamp,
-    };
-
-    const duitkuResponse = await fetch(
-      `${DUITKU_BASE_URL}/api/merchant/v2/inquiry`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(duitkuPayload),
-      }
-    );
-
-    const paymentData = await duitkuResponse.json();
-
+      sign: signature,
+      time: timestamp,
+      username: user.username,
+    });
     if (paymentData.statusCode !== '00') {
       await prisma.deposits.update({
         where: { id: deposit.id },
