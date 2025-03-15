@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
 
     const deposit = await prisma.deposits.create({
       data: {
+        userId: user.id as string,
         method: method.name,
         status: 'PENDING',
         username: user?.username,
@@ -98,7 +99,6 @@ export async function POST(req: NextRequest) {
       timestamp: timestamp,
     };
 
-    // Make API request to Duitku
     const duitkuResponse = await fetch(
       `${DUITKU_BASE_URL}/api/merchant/v2/inquiry`,
       {

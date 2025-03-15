@@ -7,21 +7,52 @@ import { DUITKU_MERCHANT_CODE, DUTIKU_API_KEY } from '../types';
 export async function POST(req: NextRequest) {
   try {
     // Get callback data from Duitku
-    const callbackData = await req.json();
+    let callbackData;
+
+    // Try to parse as JSON first
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      callbackData = await req.json();
+    } else {
+      // Handle form data
+      const formData = await req.formData();
+      callbackData = Object.fromEntries(formData.entries());
+
+      // Convert amount to string if it exists (to match expected format)
+      if (callbackData.amount) {
+        callbackData.amount = callbackData.amount.toString();
+      }
+    }
+
+    console.log('called callback request');
+    console.log('Received callback data:', callbackData);
 
     // Extract important fields
     const {
-      merchantCode,
+      wwmerchantCode,
       merchantOrderId,
       amount,
       signature,
       resultCode,
       reference,
       settlementDate,
-      paymentCode,
     } = callbackData;
 
-    console.log('Received callback data:', callbackData);
+    // Validate required fields
+    if (
+      !merchantCode ||
+      !merchantOrderId ||
+      !amount ||
+      !signature ||
+      !resultCode
+    ) {
+      console.error('Missing required fields in callback data');
+      return NextResponse.json(
+        { success: false, message: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
 
     // Validate merchantCode
     if (merchantCode !== DUITKU_MERCHANT_CODE) {
@@ -107,10 +138,10 @@ export async function POST(req: NextRequest) {
           where: { id: depositId },
         });
 
-        if (deposit && deposit.user) {
+        if (deposit) {
           // Update user balance (assuming you have a balance field in your user model)
-          await prisma.user.update({
-            where: { id: deposit.user.id },
+          await prisma.users.update({
+            where: { id: deposit.userId },
             data: {
               balance: {
                 increment: deposit.amount,

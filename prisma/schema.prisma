@@ -213,6 +213,7 @@ model Transaction {
   discountAmount    Float     @default(0) @map("discount_amount")
   finalAmount       Float     @map("final_amount")
   voucherId         Int?      @map("voucher_id")
+  qrString   String?  @map("qr_string")
   paymentStatus     String    @map("payment_status") 
   paymentCode       String    @map("payment_code")
   paymentReference  String?   @map("payment_reference")
@@ -298,7 +299,7 @@ model Deposits{
   username  String  
   method    String  
   userId   String
-  users  Users  @relation(fields: [userId],references: [id]   ,onDelete: Cascade)
+  users  Users  @relation(fields: [userId],references: [id],onDelete: Cascade)
   amount  Int  @default(0)
   status String
   createdAt  DateTime  @default(now()) @map("created_at")

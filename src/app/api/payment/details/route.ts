@@ -7,10 +7,12 @@ import {
   DUTIKU_API_KEY,
 } from '../types';
 import { DUITKU_API_KEY } from '@/constants';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const merchantOrderId = url.searchParams.get('merchantOrderId');
+  console.log(merchantOrderId);
 
   if (!merchantOrderId) {
     return NextResponse.json(
@@ -43,7 +45,24 @@ export async function GET(req: NextRequest) {
     );
 
     const data = await response.json();
-    return NextResponse.json(data);
+    const transaction = await prisma.transaction.findUnique({
+      where: {
+        merchantOrderId: data.merchantOrderId,
+      },
+      include: {
+        category: true,
+        invoice: true,
+        layanan: true,
+      },
+    });
+
+    return NextResponse.json({
+      data: {
+        transaction,
+      },
+      status: true,
+      statusCode: 200,
+    });
   } catch (error) {
     console.error('Check status error:', error);
     return NextResponse.json(
