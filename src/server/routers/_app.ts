@@ -1,4 +1,5 @@
 import { router } from '../trpc';
+import { Deposits } from './deposits';
 import { digiflazz } from './digiflazz';
 import { Layanans } from './layanans';
 import { mainRouter } from './main';
@@ -17,6 +18,7 @@ export const appRouter = router({
   sub: subCategory,
   order: order,
   voucher: voucher,
+  deposits: Deposits,
 });
 
 export type AppRouter = typeof appRouter;

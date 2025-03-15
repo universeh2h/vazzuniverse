@@ -17,7 +17,6 @@ export const FlashingButton = () => {
       }, 700); // Slightly longer "on" time
     }, 5000); // Flash every 5 seconds
 
-    // Clean up the interval when component unmounts
     return () => {
       clearInterval(interval);
     };

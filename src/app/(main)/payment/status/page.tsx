@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 interface PaymentDetailProps {
   merchantOrderId: string;
 }
-
 interface PaymentData {
   paymentUrl?: string;
   vaNumber?: string;

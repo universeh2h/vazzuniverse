@@ -22,6 +22,7 @@ model Users  {
   createdAt  DateTime  @default(now())    @map("created_at")
   updatedAt   DateTime  @updatedAt  @map("updated_at")
   Account Account[]
+  deposit Deposits[]
   Session Session[]
   Transaction  Transaction  []
   invoice Invoices[]
@@ -206,8 +207,8 @@ model Transaction {
   id                Int       @id @default(autoincrement())
   merchantOrderId   String    @unique @map("merchant_order_id")
   userId            String?   @map("user_id")
-  layananId         Int       @map("layanan_id")
-  categoryId        Int       @map("category_id")
+  layananId         Int?       @map("layanan_id")
+  categoryId        Int?       @map("category_id")
   originalAmount    Float     @map("original_amount")
   discountAmount    Float     @default(0) @map("discount_amount")
   finalAmount       Float     @map("final_amount")
@@ -229,8 +230,8 @@ model Transaction {
   invoice    Invoices[]
 
   user              Users?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  layanan           Layanan   @relation(fields: [layananId], references: [id])
-  category          Categories @relation(fields: [categoryId], references: [id])
+  layanan           Layanan?   @relation(fields: [layananId], references: [id])
+  category          Categories? @relation(fields: [categoryId], references: [id])
   voucher           Voucher?  @relation(fields: [voucherId], references: [id], onDelete: SetNull)
 
   @@index([merchantOrderId])
@@ -296,11 +297,15 @@ model Deposits{
   id   Int   @id  @default(autoincrement())
   username  String  
   method    String  
+  userId   String
+  users  Users  @relation(fields: [userId],references: [id]   ,onDelete: Cascade)
   amount  Int  @default(0)
   status String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt   @map("updated_at")
 
   @@index([username])
+
+
+  @@map("deposits")
 }
