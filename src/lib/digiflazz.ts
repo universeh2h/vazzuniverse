@@ -5,6 +5,8 @@ import { auth } from '../../auth';
 import { prisma } from './prisma';
 interface TopUpRequest {
   whatsapp: string;
+  userId: string;
+  serverId?: string;
   productCode: string;
 }
 
@@ -73,14 +75,46 @@ export class Digiflazz {
         .update(this.username + this.apiKey + refId)
         .digest('hex');
 
+      const userId = topUpData.userId?.trim();
+      const serverId = topUpData.serverId?.trim();
+
+      // Log for debugging
+      console.log('About to submit:', {
+        userId,
+        serverId,
+        productCode: topUpData.productCode,
+      });
+
+      // Format customer_no based on what Digiflazz expects
+      let customerNo;
+
+      // For Mobile Legends (uses userId.serverId format)
+      if (topUpData.productCode.includes('ML') && userId && serverId) {
+        customerNo = `${parseInt(userId)}${parseInt(serverId)}`;
+      }
+      // For Free Fire (usually just userId)
+      else if (topUpData.productCode.includes('FF') && userId) {
+        customerNo = userId;
+      }
+      // Default format with period separator
+      else if (userId && serverId) {
+        customerNo = `${userId}.${serverId}`;
+      } else if (userId) {
+        customerNo = userId;
+      } else {
+        customerNo = topUpData.whatsapp;
+      }
+      console.log(customerNo, 'cus');
       // Prepare request data
       const data = {
         username: this.username,
         buyer_sku_code: topUpData.productCode,
-        customer_no: topUpData.whatsapp,
+        customer_no: customerNo,
         ref_id: refId,
         sign: signature,
       };
+
+      console.log('Sending to Digiflazz:', data); // Log the data for debugging
 
       // Send request to Digiflazz API
       const response = await fetch('https://api.digiflazz.com/v1/transaction', {
@@ -92,6 +126,7 @@ export class Digiflazz {
       });
 
       const result: TransactionType = await response.json();
+      console.log('Digiflazz response:', result); // Log the response
 
       return result;
     } catch (error) {
@@ -101,7 +136,7 @@ export class Digiflazz {
       }
     }
   }
-  async deposite(method: string, amount: number) {
+  async deposite(method: string) {
     try {
       const session = await auth();
       if (!session?.user) {
@@ -128,6 +163,7 @@ export class Digiflazz {
         nomor = process.env.NEXT_PUBLIC_NO_ADMIN as string;
       } else if (method === 'BRI') {
         nomor = '';
+        console.log(nomor);
       } else {
         return {
           status: false,
@@ -147,6 +183,7 @@ export class Digiflazz {
         data: {
           method,
           status: 'PENDING',
+          userId: '',
           username: user.username,
           amount: 0,
         },

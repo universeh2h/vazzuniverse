@@ -2,6 +2,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   Package,
+  Settings,
   ShoppingCart,
   Users,
 } from 'lucide-react';
@@ -80,5 +81,10 @@ export const dataNavAdmin: NavItem[] = [
     nama: 'Pesanan Manual',
     path: '/dashboard/pesanan-manual',
     icon: <ClipboardList className="h-5 w-5" />,
+  },
+  {
+    nama: 'General',
+    path: '/dashboard/general',
+    icon: <Settings className="h-5 w-5" />,
   },
 ];

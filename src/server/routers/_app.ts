@@ -1,4 +1,5 @@
 import { router } from '../trpc';
+import { ConfigWeb } from './config';
 import { Deposits } from './deposits';
 import { digiflazz } from './digiflazz';
 import { Layanans } from './layanans';
@@ -19,6 +20,7 @@ export const appRouter = router({
   order: order,
   voucher: voucher,
   deposits: Deposits,
+  setting: ConfigWeb,
 });
 
 export type AppRouter = typeof appRouter;

@@ -11,6 +11,8 @@ export const order = router({
       z.object({
         categoryId: z.string(),
         layananId: z.string(),
+        userId: z.string(),
+        serverId: z.string().optional(),
         whatsapp: z.string(),
       })
     )
@@ -42,6 +44,8 @@ export const order = router({
         const digiTrans = await digi.TopUp({
           productCode: layanan.providerId,
           whatsapp: input.whatsapp,
+          userId: input.userId,
+          serverId: input.serverId,
         });
 
         //   pesanan manual
@@ -52,6 +56,7 @@ export const order = router({
             layananId: parseInt(input.layananId),
             noWa: input.whatsapp,
             paymentCode: 'MANUAL',
+            transactionType: 'MANUAL',
             originalAmount: layanan.harga,
             paymentStatus: digiTrans?.data.status as string,
             userId: user?.user.id,

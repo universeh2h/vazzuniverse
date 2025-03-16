@@ -48,7 +48,7 @@ export function HeaderOrderManual({
 
   // Fetch categories data
   const { data: categoriesData } = trpc.main.getCategories.useQuery({
-    fields: ['id', 'name', 'kode'],
+    fields: ['id', 'name', 'kode', 'placeholder1', 'placeholder2'],
   });
 
   // Filter options
