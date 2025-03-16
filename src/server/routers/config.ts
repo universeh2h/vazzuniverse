@@ -1,6 +1,8 @@
+import { CheckNickName, GameType } from '@/lib/check-nickname';
 import { publicProcedure, router } from '@/server/trpc';
 import { configWeb } from '@/types/schema/config_web';
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
 
 export const ConfigWeb = router({
   upsert: publicProcedure.input(configWeb).mutation(async ({ ctx, input }) => {
@@ -49,4 +51,26 @@ export const ConfigWeb = router({
       throw error;
     }
   }),
+  checkNickName: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        serverId: z.string().optional(),
+        type: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        return await CheckNickName({
+          type: (input.type as GameType) ?? '',
+          userId: input.userId ?? '',
+          serverId: input.serverId,
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          console.error(error.message);
+        }
+        throw error;
+      }
+    }),
 });

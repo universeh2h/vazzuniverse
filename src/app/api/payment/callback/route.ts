@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { DUITKU_MERCHANT_CODE } from '../types';
 import { getStatusMessage } from '../helpers';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
   try {
@@ -119,13 +120,28 @@ export async function POST(req: NextRequest) {
     }
 
     if (orderTopUp) {
-      const userId =
-        transaction.userId || `guest_${transaction.merchantOrderId}`;
+      let userId;
 
-      await prisma.users.findUnique({
-        where: { id: userId },
-      });
+      if (transaction.userId) {
+        // Use existing user ID if it exists
+        userId = transaction.userId;
+      } else {
+        // Create a new guest user if needed
+        const guestUser = await prisma.users.create({
+          data: {
+            id: `guest_${uuidv4()}`,
+            name: 'Guest User',
+            username: `guest_${Date.now()}@example.com`,
+            role: 'Member',
+            password: 'Password',
+            whatsapp: '08267328221',
+            balance: 0,
+          },
+        });
+        userId = guestUser.id;
+      }
 
+      // Now create the invoice with a valid user ID
       await prisma.invoices.create({
         data: {
           invoiceNumber: `INV-${merchantOrderId}`,

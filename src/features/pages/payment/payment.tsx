@@ -9,7 +9,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { CreditCard, CheckCircle2, LockIcon } from 'lucide-react';
+import {
+  CreditCard,
+  CheckCircle2,
+  LockIcon,
+  Tag,
+  AlertCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { typeIcons, typeLabels } from '@/hooks/use-payment';
 import { Input } from '@/components/ui/input';
@@ -17,6 +23,7 @@ import { usePlansStore } from '@/hooks/use-select-plan';
 import { FormatPrice } from '@/utils/formatPrice';
 import { DialogPayment } from './dialog-payment';
 import type { PlansProps } from '@/types/category';
+import type { Voucher } from '@/types/voucher';
 
 export function PaymentsSection({
   amount,
@@ -30,10 +37,52 @@ export function PaymentsSection({
     setNowa,
     selectPayment,
     setSelectPayment,
+    categories,
     voucher,
     setVoucher,
   } = usePlansStore();
   const [expandedType, setExpandedType] = useState<string | null>(null);
+  const [isValidatingVoucher, setIsValidatingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [validVoucher, setValidVoucher] = useState<Voucher | null>(null);
+  const [discountedAmount, setDiscountedAmount] = useState<number | null>(null);
+
+  const validateVoucherMutation = trpc.voucher.validateVoucher.useMutation({
+    onSuccess: (data) => {
+      setValidVoucher(data);
+      setVoucherError(null);
+
+      // Calculate the discount
+      if (amount && data) {
+        let discount = 0;
+        if (data.discountType === 'PERCENTAGE') {
+          discount = (amount * data.discountValue) / 100;
+          // Apply max discount if specified
+          if (data.maxDiscount && discount > data.maxDiscount) {
+            discount = data.maxDiscount;
+          }
+        } else {
+          // Fixed amount discount
+          discount = data.discountValue;
+        }
+
+        // Ensure discount doesn't exceed the amount
+        if (discount > amount) {
+          discount = amount;
+        }
+
+        setDiscountedAmount(amount - discount);
+      }
+
+      setIsValidatingVoucher(false);
+    },
+    onError: (error) => {
+      setVoucherError(error.message);
+      setValidVoucher(null);
+      setDiscountedAmount(null);
+      setIsValidatingVoucher(false);
+    },
+  });
 
   const groupedMethods =
     methods?.data.reduce((acc, method) => {
@@ -52,7 +101,7 @@ export function PaymentsSection({
 
     setSelectPayment({
       code: method.code as string,
-      price: amount,
+      price: discountedAmount || amount, // Use discounted amount if available
       name: method.name,
       type: method.paymentType as string,
     });
@@ -63,6 +112,22 @@ export function PaymentsSection({
     if (!amount) return;
     setExpandedType(value === expandedType ? null : value);
   };
+
+  // Handler for voucher validation
+  const handleValidateVoucher = async () => {
+    if (!voucher || !amount || !categories) return;
+
+    setIsValidatingVoucher(true);
+    setVoucherError(null);
+
+    validateVoucherMutation.mutate({
+      code: voucher,
+      amount: discountedAmount || amount,
+      categoryId: categories.id.toString(),
+    });
+  };
+
+  const displayAmount = discountedAmount || amount;
 
   return (
     <section className="w-full mx-auto p-6 bg-[#001435] border-2 border-blue-900 rounded-2xl mt-5 space-y-6 shadow-lg">
@@ -103,26 +168,64 @@ export function PaymentsSection({
             type="text"
             id="voucher"
             value={voucher || ''}
-            onChange={(e) => setVoucher(e.target.value)}
+            onChange={(e) => {
+              setVoucher(e.target.value);
+              if (validVoucher) {
+                setValidVoucher(null);
+                setDiscountedAmount(null);
+                setVoucherError(null);
+              }
+            }}
             placeholder="Masukkan kode voucher"
             className="w-full px-4 py-3 rounded-md bg-blue-950 border border-blue-800 text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
           />
           <button
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium text-sm transition-colors"
-            onClick={() => {
-              // Add voucher validation logic here
-              if (voucher) {
-                console.log('Validating voucher:', voucher);
-              }
-            }}
+            className={cn(
+              'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium text-sm transition-colors',
+              isValidatingVoucher && 'opacity-70 cursor-not-allowed'
+            )}
+            onClick={handleValidateVoucher}
+            disabled={isValidatingVoucher || !voucher || !amount}
           >
-            Terapkan
+            {isValidatingVoucher ? 'Memproses...' : 'Terapkan'}
           </button>
         </div>
-        {voucher && (
-          <div className="text-xs text-blue-300 flex items-center gap-1 mt-1">
-            <CheckCircle2 className="h-3 w-3 text-green-400" />
-            Voucher &apos;{voucher}&apos; diterapkan
+
+        {voucherError && (
+          <div className="text-xs text-red-300 flex items-center gap-1 mt-1">
+            <AlertCircle className="h-3 w-3 text-red-400" />
+            {voucherError}
+          </div>
+        )}
+
+        {validVoucher && (
+          <div className="mt-2 p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-blue-100">
+              <Tag className="h-4 w-4 text-green-400" />
+              <span className="font-medium">{validVoucher.code}</span>
+            </div>
+
+            <div className="mt-2 flex justify-between items-center">
+              <div className="text-xs text-blue-300">
+                {validVoucher.discountType === 'PERCENTAGE'
+                  ? `Diskon ${validVoucher.discountValue}%`
+                  : `Diskon ${FormatPrice(validVoucher.discountValue)}`}
+                {validVoucher.maxDiscount &&
+                  validVoucher.discountType === 'PERCENTAGE' &&
+                  ` (maks. ${FormatPrice(validVoucher.maxDiscount)})`}
+              </div>
+
+              {discountedAmount !== null && amount !== null && (
+                <div className="text-right">
+                  <div className="text-xs text-blue-300 line-through">
+                    {FormatPrice(amount as number)}
+                  </div>
+                  <div className="text-sm font-medium text-green-400">
+                    {FormatPrice(discountedAmount)}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -154,7 +257,7 @@ export function PaymentsSection({
                   <span className="font-medium">
                     {typeLabels[type] || type}
                   </span>
-                  {amount && <span>{FormatPrice(amount as number)}</span>}
+                  {displayAmount && <span>{FormatPrice(displayAmount)}</span>}
 
                   {!amount && (
                     <span className="ml-2 text-xs text-red-300 flex items-center gap-1">
@@ -215,7 +318,7 @@ export function PaymentsSection({
 
       {selectPayment && (
         <div className="transition-all duration-300 ease-in-out">
-          <DialogPayment />
+          <DialogPayment amount={discountedAmount || amount || 0} />
         </div>
       )}
     </section>

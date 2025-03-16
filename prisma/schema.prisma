@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -216,6 +216,8 @@ model Transaction {
   paymentStatus     String    @map("payment_status") 
   paymentCode       String    @map("payment_code")
   paymentReference  String?   @map("payment_reference")
+  accountId        String?    @map("account_id")
+  serverId        String?   @map("server_id")
   paymentUrl        String?   @map("payment_url")
   noWa              String    @map("no_wa")
   statusMessage     String?   @map("status_message")

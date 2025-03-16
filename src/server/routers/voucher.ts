@@ -3,6 +3,7 @@ import { publicProcedure, router } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { validateVoucher } from './vouchers';
 
 export const voucher = router({
   getAll: publicProcedure
@@ -215,97 +216,16 @@ export const voucher = router({
       z.object({
         code: z.string(),
         categoryId: z.string(),
-        amount: z.number(), // Jumlah pembelian untuk validasi minPurchase
+        amount: z.number(),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
-        const currentDate = new Date();
-
-        // Cari voucher dengan kriteria yang sesuai
-        const voucher = await ctx.prisma.voucher.findFirst({
-          where: {
-            code: input.code,
-            isActive: true,
-            startDate: { lte: currentDate },
-            expiryDate: { gte: currentDate },
-            AND: [
-              {
-                OR: [
-                  { isForAllCategories: true },
-                  {
-                    categories: {
-                      some: {
-                        categoryId: parseInt(input.categoryId),
-                      },
-                    },
-                  },
-                ],
-              },
-
-              {
-                // Validasi minimum purchase jika ada
-                OR: [
-                  { minPurchase: null },
-                  { minPurchase: { lte: input.amount } },
-                ],
-              },
-            ],
-          },
-          include: {
-            categories: {
-              select: {
-                categoryId: true,
-              },
-            },
-          },
+        const data = await validateVoucher(ctx.prisma, {
+          ...input,
         });
 
-        if (!voucher) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message:
-              'Kode voucher tidak valid atau tidak berlaku untuk kategori ini',
-          });
-        }
-
-        // Hitung diskon yang akan diberikan
-        let discountAmount = 0;
-
-        if (voucher.discountType === 'percentage') {
-          discountAmount = (input.amount * voucher.discountValue) / 100;
-
-          // Terapkan max discount jika ada
-          if (voucher.maxDiscount && discountAmount > voucher.maxDiscount) {
-            discountAmount = voucher.maxDiscount;
-          }
-        } else if (voucher.discountType === 'fixed') {
-          discountAmount = voucher.discountValue;
-
-          // Diskon tidak boleh melebihi nilai pembelian
-          if (discountAmount > input.amount) {
-            discountAmount = input.amount;
-          }
-        }
-
-        // Format respons untuk preview
-        return {
-          success: true,
-          voucher: {
-            id: voucher.id,
-            code: voucher.code,
-            discountType: voucher.discountType,
-            discountValue: voucher.discountValue,
-            isForAllCategories: voucher.isForAllCategories,
-          },
-          discountAmount: parseFloat(discountAmount.toFixed(2)),
-          finalAmount: parseFloat((input.amount - discountAmount).toFixed(2)),
-          message: `Voucher berhasil diterapkan. Anda mendapatkan diskon sebesar ${
-            voucher.discountType === 'percentage'
-              ? `${voucher.discountValue}%`
-              : `Rp ${voucher.discountValue.toLocaleString('id-ID')}`
-          }`,
-        };
+        return data;
       } catch (error) {
         if (error instanceof TRPCError) {
           throw error;
@@ -317,14 +237,12 @@ export const voucher = router({
       }
     }),
 
-  // Endpoint untuk menerapkan voucher pada transaksi
   applyVoucher: publicProcedure
     .input(
       z.object({
         code: z.string(),
         categoryId: z.string(),
         amount: z.number(),
-        transactionId: z.number().optional(), // Opsional, jika ingin menyimpan referensi
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -387,17 +305,6 @@ export const voucher = router({
               if (discountAmount > input.amount) {
                 discountAmount = input.amount;
               }
-            }
-
-            // Jika ada transactionId, update transaksi dengan referensi voucher
-            if (input.transactionId) {
-              await prisma.transaction.update({
-                where: { id: input.transactionId },
-                data: {
-                  voucherId: voucher.id,
-                  discountAmount,
-                },
-              });
             }
 
             return {

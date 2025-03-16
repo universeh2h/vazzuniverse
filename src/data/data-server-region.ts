@@ -1,4 +1,16 @@
 export const dataServerGenshin = ['America', 'Europe', 'Asia', 'TW_HK_MO'];
+export const getServerData = (code: string) => {
+  switch (code) {
+    case 'genshin-impact':
+      return dataServerGenshin;
+    case 'honkai-star-rail':
+      return dataSeverHonkaiTarrail;
+    case 'ragnarok-m':
+      return ragnarokM;
+    default:
+      return undefined;
+  }
+};
 export const dataServerHeroesEvolved = [
   'North America - LOST TEMPLE [NA]',
   'North America - NEW ORDER',

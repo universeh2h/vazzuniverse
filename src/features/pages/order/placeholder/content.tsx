@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react';
+'use client';
+
+import type React from 'react';
+
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Info } from 'lucide-react';
-import { Category } from '@/types/category';
+import type { Category } from '@/types/category';
+
+interface ServerOption {
+  name: string;
+  value: string;
+}
+
+type ServerData = string[] | ServerOption[];
 
 interface PlaceholderContentType {
   userId?: string;
@@ -9,6 +26,7 @@ interface PlaceholderContentType {
   onChangeUserId?: (value: string) => void;
   onChangeServerId?: (value: string) => void;
   category: Category;
+  serverData?: ServerData;
 }
 
 export function PlaceholderContent({
@@ -17,36 +35,31 @@ export function PlaceholderContent({
   onChangeUserId,
   serverId = '',
   userId = '',
+  serverData,
 }: PlaceholderContentType) {
-  const [placeholder1, setPlaceholder1] = useState(userId);
-  const [placeholder2, setPlaceholder2] = useState(serverId);
-
-  // Update local state when props change
-  useEffect(() => {
-    setPlaceholder1(userId);
-  }, [userId]);
-
-  useEffect(() => {
-    setPlaceholder2(serverId);
-  }, [serverId]);
-
   const hasSecondInput =
     category.placeholder2 &&
     category.placeholder2 !== '-' &&
     category.placeholder2 !== '.' &&
     category.placeholder2 !== '2';
 
+  // Check if we should use dropdown
+  const shouldUseDropdown =
+    hasSecondInput && serverData && serverData.length > 0;
+
   const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPlaceholder1(value);
     if (onChangeUserId) {
-      onChangeUserId(value);
+      onChangeUserId(e.target.value);
     }
   };
 
   const handleServerIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPlaceholder2(value);
+    if (onChangeServerId) {
+      onChangeServerId(e.target.value);
+    }
+  };
+
+  const handleServerSelectChange = (value: string) => {
     if (onChangeServerId) {
       onChangeServerId(value);
     }
@@ -64,7 +77,7 @@ export function PlaceholderContent({
           )}
         </label>
         <Input
-          value={placeholder1}
+          value={userId ?? ''}
           onChange={handleUserIdChange}
           placeholder={`${category.placeholder1}`}
           className="w-full rounded-lg px-2 py-1 placeholder:text-gray-500 text-white border-2 border-blue-500 focus-visible:ring-0 focus-visible:border-blue-900"
@@ -81,12 +94,40 @@ export function PlaceholderContent({
               </span>
             )}
           </label>
-          <Input
-            value={placeholder2}
-            onChange={handleServerIdChange}
-            placeholder={`${category.placeholder2}`}
-            className="w-full rounded-lg px-2 py-1 placeholder:text-gray-500 text-white border-2 border-blue-500 focus-visible:ring-0 focus-visible:border-blue-900"
-          />
+
+          {shouldUseDropdown ? (
+            <Select value={serverId} onValueChange={handleServerSelectChange}>
+              <SelectTrigger className="w-full rounded-lg px-2 py-1 text-white border-2 border-blue-500 focus-visible:ring-0 focus-visible:border-blue-900">
+                <SelectValue placeholder={`Pilih ${category.placeholder2}`} />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0a192f] border-blue-700">
+                {serverData.map((server, index) => {
+                  // Handle both string arrays and object arrays
+                  const value =
+                    typeof server === 'string' ? server : server.value;
+                  const label =
+                    typeof server === 'string' ? server : server.name;
+
+                  return (
+                    <SelectItem
+                      key={index}
+                      value={value}
+                      className="text-white hover:bg-blue-800"
+                    >
+                      {label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={serverId ?? ''}
+              onChange={handleServerIdChange}
+              placeholder={`${category.placeholder2}`}
+              className="w-full rounded-lg px-2 py-1 placeholder:text-gray-500 text-white border-2 border-blue-500 focus-visible:ring-0 focus-visible:border-blue-900"
+            />
+          )}
         </div>
       )}
     </div>

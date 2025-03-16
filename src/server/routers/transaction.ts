@@ -19,6 +19,7 @@ export const transaction = router({
         },
         include: {
           invoice: true,
+          category: true,
         },
       });
     }),

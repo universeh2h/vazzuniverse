@@ -16,6 +16,9 @@ export type RequestPayment = {
   noWa: string;
   layanan: string;
   paymentCode: string;
+  accountId: string;
+  serverId: string;
+  voucherCode?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -30,7 +33,9 @@ export async function POST(req: NextRequest) {
       paymentCode,
       noWa,
       voucherCode,
-    }: RequestPayment & { voucherCode?: string } = body;
+      accountId,
+      serverId,
+    }: RequestPayment = body;
 
     // Fetch the service details
     const productDetails = await prisma.layanan.findFirst({
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
       new Date(productDetails.expiredFlashSale) > new Date()
     ) {
       price = productDetails.hargaFlashSale || 0;
-    } else if (session?.user?.role === 'platinum') {
+    } else if (session?.user?.role === 'Platinum') {
       price = productDetails.hargaPlatinum;
     } else {
       price = productDetails.harga;
@@ -171,10 +176,6 @@ export async function POST(req: NextRequest) {
     const randomStr = Math.random().toString(36).substring(2, 8);
     const merchantOrderId = 'ORD-' + Date.now() + '-' + randomStr;
 
-    // Updated signature generation
-    // atau
-
-    // Prepare transaction data
     const transactionData = {
       merchantOrderId,
       layananId: productDetails.id,
@@ -185,6 +186,7 @@ export async function POST(req: NextRequest) {
       finalAmount: price,
       paymentStatus: 'PENDING',
       paymentCode,
+
       noWa,
     };
 
@@ -200,7 +202,6 @@ export async function POST(req: NextRequest) {
       }
     }
     console.log(transactionData);
-    // Add voucher only if it was applied
     if (appliedVoucherId) {
       Object.assign(transactionData, { voucherId: appliedVoucherId });
     }
@@ -210,6 +211,8 @@ export async function POST(req: NextRequest) {
       data: {
         ...transactionData,
         transactionType: 'Top up',
+        accountId,
+        serverId,
       },
     });
 

@@ -10,6 +10,7 @@ import { usePlansStore } from '@/hooks/use-select-plan';
 import { OrderPage } from './order';
 import { useEffect } from 'react';
 import { PaymentsSection } from '../payment/payment';
+import { getServerData } from '@/data/data-server-region';
 
 export default function DetailsCategories({ name }: { name: string }) {
   const { data, isLoading } = trpc.main.getCategoriesByName.useQuery({
@@ -21,7 +22,14 @@ export default function DetailsCategories({ name }: { name: string }) {
   });
 
   const category = data?.categories;
-  const { selectPlans, setCategories } = usePlansStore();
+  const {
+    selectPlans,
+    setCategories,
+    setServerId,
+    userID,
+    setUserId,
+    serverID,
+  } = usePlansStore();
 
   useEffect(() => {
     if (data) {
@@ -67,7 +75,14 @@ export default function DetailsCategories({ name }: { name: string }) {
                 <HelpCircle size={20} className="text-blue-400" />
               </div>
 
-              <PlaceholderContent category={category as Category} />
+              <PlaceholderContent
+                category={category as Category}
+                onChangeServerId={setServerId}
+                onChangeUserId={setUserId}
+                serverId={serverID ?? ''}
+                userId={userID as string}
+                serverData={getServerData(name)}
+              />
             </div>
             <div>
               <OrderPage

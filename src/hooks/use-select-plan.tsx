@@ -30,7 +30,7 @@ export type TypePlansStore = {
   noWa: null | string;
   setNowa: (wa: string) => void;
   selectPayment: null | Method;
-  setSelectPayment: (method: Method) => void;
+  setSelectPayment: (method: Method | null) => void;
 };
 
 export const usePlansStore = create<TypePlansStore>((set) => ({
@@ -47,5 +47,5 @@ export const usePlansStore = create<TypePlansStore>((set) => ({
   noWa: null,
   setNowa: (wa: string) => set({ noWa: wa }),
   selectPayment: null,
-  setSelectPayment: (payment: Method) => set({ selectPayment: payment }),
+  setSelectPayment: (payment: Method | null) => set({ selectPayment: payment }),
 }));

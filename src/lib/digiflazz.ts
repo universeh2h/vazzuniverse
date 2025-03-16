@@ -98,13 +98,12 @@ export class Digiflazz {
       }
       // Default format with period separator
       else if (userId && serverId) {
-        customerNo = `${userId}.${serverId}`;
+        customerNo = `${userId}${serverId}`;
       } else if (userId) {
         customerNo = userId;
       } else {
         customerNo = topUpData.whatsapp;
       }
-      console.log(customerNo, 'cus');
       // Prepare request data
       const data = {
         username: this.username,
@@ -126,7 +125,7 @@ export class Digiflazz {
       });
 
       const result: TransactionType = await response.json();
-      console.log('Digiflazz response:', result); // Log the response
+      console.log('Digiflazz response:', result);
 
       return result;
     } catch (error) {
