@@ -27,7 +27,8 @@ export async function CheckNickName(
       request.userId
     )}&server=${request.serverId}`;
   } else if (request.type === 'genshin-impact') {
-    url = `${BASE_URL_VALIDATE_NICKNAME}/gi?id=${parseInt(request.userId)}`;
+    console.log(request.userId);
+    url = `${BASE_URL_VALIDATE_NICKNAME}/gi?id=${request.userId}`;
   } else if (request.type === 'honkai-star-rail') {
     url = `${BASE_URL_VALIDATE_NICKNAME}/hsr?id=${parseInt(request.userId)}`;
   } else if (request.type === 'free-fire') {
@@ -52,6 +53,10 @@ export async function CheckNickName(
     url = `${BASE_URL_VALIDATE_NICKNAME}/ag?id=${encodeURIComponent(
       parseInt(request.userId)
     )}`;
+  } else if (request.type === 'point-blank') {
+    url = `${BASE_URL_VALIDATE_NICKNAME}/pb?id=${encodeURIComponent(
+      parseInt(request.userId)
+    )}`;
   }
 
   try {
@@ -60,12 +65,12 @@ export async function CheckNickName(
     });
 
     const data = await response.json();
-
+    console.log(data);
     return {
       success: data.success || false,
       game: request.type,
       id: request.userId,
-      server: request.serverId,
+      server: data.server || null,
       name: data.name || null,
       message: data.message || null,
     };

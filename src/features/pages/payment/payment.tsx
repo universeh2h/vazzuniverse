@@ -118,6 +118,7 @@ export function PaymentsSection({
   // Handler for voucher validation
   const handleValidateVoucher = async () => {
     if (!voucher || !amount || !categories) return;
+    console.log(categories);
     setIsValidatingVoucher(true);
     setVoucherError(null);
     validateVoucherMutation.mutate({

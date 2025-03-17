@@ -3,11 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { DUITKU_MERCHANT_CODE } from '../types';
 import { getStatusMessage } from '../helpers';
 import { v4 as uuidv4 } from 'uuid';
+import { Digiflazz } from '@/lib/digiflazz';
+import { DIGI_KEY, DIGI_USERNAME } from '@/constants';
 
 export async function POST(req: NextRequest) {
   try {
     // Get callback data from Duitku
     let callbackData;
+    const digiflazz = new Digiflazz(DIGI_USERNAME, DIGI_KEY);
 
     const contentType = req.headers.get('content-type') || '';
 
@@ -33,6 +36,8 @@ export async function POST(req: NextRequest) {
       signature,
       resultCode,
       reference,
+      productDetails,
+      phoneNumber,
     } = callbackData;
 
     // Validate required fields
@@ -77,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     let paymentStatus = 'PENDING';
     if (resultCode === '00' || resultCode === '0') {
-      paymentStatus = 'PAID-';
+      paymentStatus = 'PAID';
     } else if (resultCode === '01') {
       paymentStatus = 'PENDING';
     } else {
@@ -153,9 +158,26 @@ export async function POST(req: NextRequest) {
           status: 'PAID',
           dueDate: new Date(),
           paymentDate: new Date(),
-          notes: `Payment for service ID: ${transaction.layananId}`,
           termsAndConditions: 'Standard terms and conditions apply.',
         },
+      });
+
+      const pembelian = await prisma.pembelian.findFirst({
+        where: {
+          order_id: transaction.id,
+        },
+      });
+      const layanan = await prisma.layanan.findFirst({
+        where: {
+          layanan: productDetails,
+        },
+      });
+
+      await digiflazz.TopUp({
+        productCode: layanan?.providerId as string,
+        userId: pembelian?.user_id as string,
+        whatsapp: phoneNumber,
+        serverId: pembelian?.zone as string,
       });
     }
 

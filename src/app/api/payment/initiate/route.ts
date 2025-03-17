@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       typeTransaksi,
       game,
       nickname,
+      accountId,
     }: RequestPayment = body;
 
     console.log(body);
@@ -246,6 +247,12 @@ export async function POST(req: NextRequest) {
           data: transactionData,
         });
 
+        const layanans = await tx.layanan.findFirst({
+          where: {
+            layanan,
+          },
+        });
+
         // Create pembelian record
         await tx.pembelian.create({
           data: {
@@ -259,7 +266,9 @@ export async function POST(req: NextRequest) {
             username: session?.user?.username || 'Guest',
             user_id: session?.user.id,
             zone: serverId,
+            provider_order_id: layanans?.providerId,
             nickname,
+            accountID: accountId,
             transaction_id: transaction.id,
             ref_id: null,
           },
@@ -288,7 +297,7 @@ export async function POST(req: NextRequest) {
           merchantCode: DUITKU_MERCHANT_CODE,
           paymentAmount: paymentAmount,
           merchantOrderId: merchantOrderId,
-          productDetails: 'Pembayaran #' + merchantOrderId,
+          productDetails: layanan,
           paymentMethod: paymentCode,
           customerVaName: 'vazzuniverse',
           phoneNumber: noWa,

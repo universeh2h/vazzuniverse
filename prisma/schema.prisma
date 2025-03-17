@@ -219,7 +219,7 @@ model Pembelian {
   password_vilog        String?   @db.Text
   loginvia_vilog        String?   @db.Text
   layanan               String    @db.VarChar(255)
-  
+  accountID    String?
   harga                 Float    
   profit                Float     
   provider_order_id     String?   @db.VarChar(255)

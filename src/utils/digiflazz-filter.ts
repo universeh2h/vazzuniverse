@@ -10,7 +10,6 @@ export function filterProductsByGame(
   const formattedGameName = lowerGameName.replace(/-/g, ' ');
 
   return products.filter((product: Product) => {
-    const productNameLower = product.product_name.toLowerCase();
     const brandLower = product.brand?.toLowerCase() || '';
     const categoryLower = product.category?.toLowerCase() || '';
     const skuCodeLower = product.buyer_sku_code.toLowerCase();

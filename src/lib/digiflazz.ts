@@ -88,7 +88,6 @@ export class Digiflazz {
       // Format customer_no based on what Digiflazz expects
       let customerNo;
 
-      // For Mobile Legends (uses userId.serverId format)
       if (topUpData.productCode.includes('ML') && userId && serverId) {
         customerNo = `${parseInt(userId)}${parseInt(serverId)}`;
       }
@@ -104,6 +103,7 @@ export class Digiflazz {
       } else {
         customerNo = topUpData.whatsapp;
       }
+
       // Prepare request data
       const data = {
         username: this.username,
