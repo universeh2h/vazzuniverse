@@ -13,15 +13,30 @@ export const transaction = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      return await ctx.prisma.transaction.findUnique({
+      const data = await ctx.prisma.transaction.findUnique({
         where: {
           merchantOrderId: input.merchantOrderId,
         },
         include: {
           invoice: true,
-          category: true,
+          pembelian: true,
         },
       });
+
+      if (!data) {
+        throw new Error('transaction not found');
+      }
+      const category = await ctx.prisma.categories.findFirst({
+        where: {
+          kode: data.pembelian[0].game,
+        },
+      });
+      const res = {
+        data,
+        category,
+      };
+
+      return res;
     }),
 
   getCalculatedTransaction: publicProcedure
@@ -84,16 +99,7 @@ export const transaction = router({
         where,
         include: {
           invoice: true,
-          layanan: {
-            select: {
-              layanan: true,
-            },
-          },
-          category: {
-            select: {
-              name: true,
-            },
-          },
+
           user: {
             select: {
               id: true,
@@ -139,16 +145,7 @@ export const transaction = router({
           createdAt: 'desc',
         },
         include: {
-          layanan: {
-            select: {
-              layanan: true,
-            },
-          },
-          category: {
-            select: {
-              name: true,
-            },
-          },
+          pembelian: true,
           user: {
             select: {
               id: true,
@@ -162,17 +159,6 @@ export const transaction = router({
 
       return data.map((transaction) => ({
         ...transaction,
-        layananName:
-          transaction.layanan?.layanan ??
-          (transaction.transactionType === 'DEPOSIT'
-            ? 'Deposit Saldo'
-            : transaction.transactionType === 'TOPUP'
-            ? 'Top-up Manual'
-            : 'Transaksi Manual'),
-        categoryName: transaction.category?.name ?? 'Lainnya',
-        isManual:
-          !transaction.layananId ||
-          ['DEPOSIT', 'TOPUP'].includes(transaction.transactionType),
       }));
     }),
   getTransactionStats: publicProcedure
@@ -359,8 +345,7 @@ export const transaction = router({
         },
         take: 10,
         include: {
-          layanan: true,
-          category: true,
+          pembelian: true,
           user: {
             select: {
               id: true,

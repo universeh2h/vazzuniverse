@@ -41,9 +41,8 @@ export function PlaceholderContent({
     category.placeholder2 &&
     category.placeholder2 !== '-' &&
     category.placeholder2 !== '.' &&
-    category.placeholder2 !== '2';
-
-  // Check if we should use dropdown
+    category.placeholder2 !== '2' &&
+    category.placeholder2 != 'h';
   const shouldUseDropdown =
     hasSecondInput && serverData && serverData.length > 0;
 

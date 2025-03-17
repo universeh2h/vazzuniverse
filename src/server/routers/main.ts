@@ -79,6 +79,7 @@ export const mainRouter = router({
         const categories = await ctx.prisma.categories.findFirst({
           where: {
             kode: input.kode,
+            status: 'active',
           },
         });
 
@@ -124,7 +125,7 @@ export const mainRouter = router({
 
         // Get paginated data
         const categories = await ctx.prisma.categories.findMany({
-          where: { type: input.type },
+          where: { type: input.type, status: 'active' },
           skip,
           take: input.perPage,
           orderBy: { id: 'asc' },
@@ -234,6 +235,7 @@ export const mainRouter = router({
       const categories = await ctx.prisma.categories.findMany({
         where: {
           type: 'populer',
+          status: 'active',
         },
       });
       return categories;

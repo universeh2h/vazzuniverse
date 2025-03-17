@@ -14,7 +14,7 @@ model Users  {
   name   String? 
   username   String  @unique
   password  String  
-  whatsapp  String  @db.VarChar(50) 
+  whatsapp  String?  @db.VarChar(50) 
   balance   Int @default(0)
   apiKey    String?   @map("api_key")
   otp    String?  
@@ -26,6 +26,7 @@ model Users  {
   Session Session[]
   Transaction  Transaction  []
   invoice Invoices[]
+  pembelian  Pembelian[]
 
 
 @@index([username])
@@ -90,7 +91,6 @@ model Categories  {
   createdAt  DateTime   @default(now())  @map("created_at")
   updatedAt   DateTime  @updatedAt  @map("updated_at")
   bannerLayanan   String   @map("bannerlayanan")
-  transaction  Transaction[]
   vouchers  VoucherCategory[]
 
   @@index([kode,name])
@@ -130,8 +130,14 @@ model Methods  {
   images String
   code  String  @db.VarChar(50)
   paymentType  String?  @map("payment_type")
-  paymentCodeMidtrans  String?  @map("payment_code_midtrans")
+  paymentCodeTripay  String?  @map("payment_code_tripay")
   keterangan  String
+  typeTax  String?  
+  taxAdmin Int?  // Rp.4.250  //  Rp. 4.250  + 3 %
+  min  Int? //  min-amount  //10.000 etc
+  minExpired   Int?    @default(0)
+  maxExpired  Int?   @default(0)
+  max  Int?  //  max amount //15.000.000
   type  String   @map("tipe")
   createdAt   DateTime   @default(now())  @map("created_at")
   updatedAt   DateTime  @default(now())  @map("updated_at")
@@ -163,7 +169,7 @@ model Layanan {
   productLogo      String?  @map("product_logo")
   createdAt        DateTime? @default(now())  @map("created_at")
   updatedAt        DateTime? @updatedAt  @map("updated_at")
-  transaction  Transaction[]
+
   @@map("layanans")
 }
 model Voucher {
@@ -202,91 +208,101 @@ model VoucherCategory {
   @@map("voucher_categories")
 }
 
-model Transaction {
-  id                Int       @id @default(autoincrement())
-  merchantOrderId   String    @unique @map("merchant_order_id")
-  userId            String?   @map("user_id")
-  layananId         Int?       @map("layanan_id")
-  categoryId        Int?       @map("category_id")
-  originalAmount    Float     @map("original_amount")
-  discountAmount    Float     @default(0) @map("discount_amount")
-  finalAmount       Float     @map("final_amount")
-  voucherId         Int?      @map("voucher_id")
-  qrString          String?  @map("qr_string")
-  paymentStatus     String    @map("payment_status") 
-  paymentCode       String    @map("payment_code")
-  paymentReference  String?   @map("payment_reference")
-  accountId        String?    @map("account_id")
-  serverId        String?   @map("server_id")
-  paymentUrl        String?   @map("payment_url")
-  noWa              String    @map("no_wa")
-  statusMessage     String?   @map("status_message")
-  completedAt       DateTime? @map("completed_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime? @updatedAt @map("updated_at")
-  transactionType    String    @map("transaction_type")
-  invoice           Invoices[]
+model Pembelian {
+  id                    Int       @id @default(autoincrement())
+  order_id              String  @unique  @db.VarChar(255)
+  username              String    @db.VarChar(255)
+  user_id               String?   @db.VarChar(255)
+  zone                  String?   @db.VarChar(255)
+  nickname              String?   @db.VarChar(255)
+  email_vilog           String?   @db.Text
+  password_vilog        String?   @db.Text
+  loginvia_vilog        String?   @db.Text
+  layanan               String    @db.VarChar(255)
+  
+  harga                 Float    
+  profit                Float     
+  provider_order_id     String?   @db.VarChar(255)
+  status                String    @db.VarChar(255)
+  log                   String?   @db.VarChar(1000)
+  sn                    String?   @db.VarChar(255)
+  tipe_transaksi        String    @db.VarChar(255)
+  game                  String    @db.VarChar(255)
+  is_digi               Boolean   @default(false)
+  ref_id                String?   @db.VarChar(255)
+  success_report_sended Boolean   @default(false)
+  transaction_id        Int?      
+  created_at            DateTime? @default(now())
+  updated_at            DateTime? @updatedAt
 
-  user              Users?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  layanan           Layanan?   @relation(fields: [layananId], references: [id])
-  category          Categories? @relation(fields: [categoryId], references: [id])
-  voucher           Voucher?  @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+  user        Users?       @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  transaction Transaction? @relation(fields: [transaction_id], references: [id])
+
+  @@index([order_id])
+  @@index([user_id])
+  @@index([transaction_id])
+  @@map("pembelian")
+}
+
+model Transaction {
+  id               Int       @id @default(autoincrement())
+  merchantOrderId  String    @unique @map("merchant_order_id")
+  userId           String?   @map("user_id")
+  originalAmount   Float     @map("original_amount")
+  discountAmount   Float     @default(0) @map("discount_amount")
+  finalAmount      Float     @map("final_amount")
+  voucherId        Int?      @map("voucher_id")
+  qrString         String?   @map("qr_string")
+  paymentStatus    String    @map("payment_status")
+  paymentCode      String    @map("payment_code")
+  paymentReference String?   @map("payment_reference")
+  paymentUrl       String?   @map("payment_url")
+  noWa             String    @map("no_wa")
+  statusMessage    String?   @map("status_message")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+  transactionType  String    @map("transaction_type")
+
+  invoice    Invoices[]
+  pembelian  Pembelian[]
+  user       Users?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  voucher    Voucher?   @relation(fields: [voucherId], references: [id], onDelete: SetNull)
 
   @@index([merchantOrderId])
   @@index([userId])
   @@index([paymentStatus])
   @@index([voucherId])
   @@map("transactions")
-
 }
+
 model Invoices {
-  id                Int       @id @default(autoincrement())
-  invoiceNumber     String    @unique @map("invoice_number")
-  transactionId     Int?      @map("transaction_id") 
-  userId            String?    @map("user_id")
-  
-  subtotal          Float
-  taxAmount         Float     @default(0) @map("tax_amount")
-  discountAmount    Float     @default(0) @map("discount_amount")
-  totalAmount       Float     @map("total_amount")
-  
-  status            String    // "draft", "sent", "paid", "cancelled", etc.
-  dueDate           DateTime  @map("due_date")
-  paymentDate       DateTime? @map("payment_date")
-  
-  notes             String?
-  termsAndConditions String?  @map("terms_and_conditions")
-  
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime? @updatedAt @map("updated_at")
-  
+  id                 Int       @id @default(autoincrement())
+  invoiceNumber      String    @unique @map("invoice_number")
+  transactionId      Int?      @map("transaction_id")
+  userId             String?   @map("user_id")
+  subtotal           Float
+  taxAmount          Float     @default(0) @map("tax_amount")
+  discountAmount     Float     @default(0) @map("discount_amount")
+  totalAmount        Float     @map("total_amount")
+  product            String?
+  status             String
+  dueDate            DateTime  @map("due_date")
+  paymentDate        DateTime? @map("payment_date")
+  notes              String?
+  termsAndConditions String?   @map("terms_and_conditions")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime? @updatedAt @map("updated_at")
+
   // Relations
-  transaction       Transaction? @relation(fields: [transactionId], references: [id])
-  user              Users?        @relation(fields: [userId], references: [id])
-  invoiceItems      InvoiceItems[]
-  
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  user        Users?       @relation(fields: [userId], references: [id])
+
   @@index([invoiceNumber])
   @@index([userId])
   @@index([transactionId])
   @@index([status])
-  
   @@map("invoices")
-}
-
-model InvoiceItems {
-  id                Int       @id @default(autoincrement())
-  invoiceId         Int       @map("invoice_id")
-  description       String
-  quantity          Int       @default(1)
-  unitPrice         Float     @map("unit_price")
-  amount            Float
-  
-  // Relations
-  invoice           Invoices  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  
-  @@index([invoiceId])
-  
-  @@map("invoice_items")
 }
 
 

@@ -4,9 +4,8 @@ import crypto from 'crypto';
 import {
   DUITKU_BASE_URL,
   DUITKU_MERCHANT_CODE,
-  DUTIKU_API_KEY,
+  DUITKU_API_KEY,
 } from '../types';
-import { DUITKU_API_KEY } from '@/constants';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
@@ -74,7 +73,7 @@ export async function GET(req: NextRequest) {
 
 // Fungsi untuk generate signature
 function generateSignature(merchantOrderId: string): string {
-  if (!DUITKU_MERCHANT_CODE || !DUTIKU_API_KEY) {
+  if (!DUITKU_MERCHANT_CODE || !DUITKU_API_KEY) {
     throw new Error('Missing Duitku configuration');
   }
 

@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     let paymentStatus = 'PENDING';
     if (resultCode === '00' || resultCode === '0') {
-      paymentStatus = 'SUCCESS';
+      paymentStatus = 'PAID-';
     } else if (resultCode === '01') {
       paymentStatus = 'PENDING';
     } else {

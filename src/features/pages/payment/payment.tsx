@@ -25,6 +25,12 @@ import { DialogPayment } from './dialog-payment';
 import type { PlansProps } from '@/types/category';
 import type { Voucher } from '@/types/voucher';
 
+// Fungsi validasi amount
+const isAmountValid = (method: PaymentMethod, amount?: number): boolean => {
+  if (!amount && method.min && method.max) return false;
+  return amount >= method?.min && amount <= method.max;
+};
+
 export function PaymentsSection({
   amount,
 }: {
@@ -32,6 +38,7 @@ export function PaymentsSection({
   productDetails?: PlansProps | null;
 }): JSX.Element {
   const { data: methods } = trpc.methods.getMethods.useQuery();
+  console.log(methods);
   const {
     noWa,
     setNowa,
@@ -51,7 +58,6 @@ export function PaymentsSection({
     onSuccess: (data) => {
       setValidVoucher(data);
       setVoucherError(null);
-
       // Calculate the discount
       if (amount && data) {
         let discount = 0;
@@ -65,15 +71,12 @@ export function PaymentsSection({
           // Fixed amount discount
           discount = data.discountValue;
         }
-
         // Ensure discount doesn't exceed the amount
         if (discount > amount) {
           discount = amount;
         }
-
         setDiscountedAmount(amount - discount);
       }
-
       setIsValidatingVoucher(false);
     },
     onError: (error) => {
@@ -98,12 +101,11 @@ export function PaymentsSection({
 
   const handleSelectMethod = (method: PaymentMethod) => {
     if (!amount) return;
-
     setSelectPayment({
       code: method.code as string,
-      price: discountedAmount || amount, // Use discounted amount if available
+      price: discountedAmount || amount,
       name: method.name,
-      type: method.paymentType as string,
+      type: method.type,
     });
   };
 
@@ -116,10 +118,8 @@ export function PaymentsSection({
   // Handler for voucher validation
   const handleValidateVoucher = async () => {
     if (!voucher || !amount || !categories) return;
-
     setIsValidatingVoucher(true);
     setVoucherError(null);
-
     validateVoucherMutation.mutate({
       code: voucher,
       amount: discountedAmount || amount,
@@ -133,11 +133,10 @@ export function PaymentsSection({
     <section className="w-full mx-auto p-6 bg-[#001435] border-2 border-blue-900 rounded-2xl mt-5 space-y-6 shadow-lg">
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-blue-100 flex items-center gap-2">
-          <span>💳</span>
+          <span>ðŸ’³</span>
           Pilih Metode Pembayaran
         </h2>
       </div>
-
       <div className="mb-4 space-y-2">
         <label
           htmlFor="whatsapp"
@@ -155,7 +154,6 @@ export function PaymentsSection({
           required
         />
       </div>
-
       <div className="mb-4 space-y-2">
         <label
           htmlFor="voucher"
@@ -190,21 +188,18 @@ export function PaymentsSection({
             {isValidatingVoucher ? 'Memproses...' : 'Terapkan'}
           </button>
         </div>
-
         {voucherError && (
           <div className="text-xs text-red-300 flex items-center gap-1 mt-1">
             <AlertCircle className="h-3 w-3 text-red-400" />
             {voucherError}
           </div>
         )}
-
         {validVoucher && (
           <div className="mt-2 p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
             <div className="flex items-center gap-2 text-sm text-blue-100">
               <Tag className="h-4 w-4 text-green-400" />
               <span className="font-medium">{validVoucher.code}</span>
             </div>
-
             <div className="mt-2 flex justify-between items-center">
               <div className="text-xs text-blue-300">
                 {validVoucher.discountType === 'PERCENTAGE'
@@ -214,7 +209,6 @@ export function PaymentsSection({
                   validVoucher.discountType === 'PERCENTAGE' &&
                   ` (maks. ${FormatPrice(validVoucher.maxDiscount)})`}
               </div>
-
               {discountedAmount !== null && amount !== null && (
                 <div className="text-right">
                   <div className="text-xs text-blue-300 line-through">
@@ -229,7 +223,6 @@ export function PaymentsSection({
           </div>
         )}
       </div>
-
       <Accordion
         type="single"
         collapsible
@@ -258,7 +251,6 @@ export function PaymentsSection({
                     {typeLabels[type] || type}
                   </span>
                   {displayAmount && <span>{FormatPrice(displayAmount)}</span>}
-
                   {!amount && (
                     <span className="ml-2 text-xs text-red-300 flex items-center gap-1">
                       <LockIcon className="h-3 w-3" />
@@ -267,55 +259,72 @@ export function PaymentsSection({
                   )}
                 </div>
               </AccordionTrigger>
-
               <AccordionContent className="px-4 pt-3 pb-5 bg-blue-950/40">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {groupedMethods[type].map((method) => (
-                    <div
-                      key={method.id}
-                      className={cn(
-                        'cursor-pointer border border-blue-800 hover:border-blue-400 rounded-lg w-full h-24 overflow-hidden relative bg-blue-950/20 transition-all duration-200',
-                        selectPayment?.code === method.paymentCodeMidtrans &&
-                          'border-blue-400 bg-blue-900/30'
-                      )}
-                      onClick={() => handleSelectMethod(method)}
-                    >
-                      <div className="h-full flex flex-row items-center p-3">
-                        <div className="flex-shrink-0 flex items-center justify-center mr-3">
-                          <Image
-                            width={300}
-                            height={300}
-                            src={method.images}
-                            alt={method.name}
-                            className="size-12 object-contain"
-                          />
-                        </div>
-                        <div className="flex-grow space-y-1">
-                          <p className="text-sm font-medium text-blue-100">
-                            {method.name}
-                          </p>
-                          {method.keterangan && (
-                            <p className="text-xs text-blue-300">
-                              {method.keterangan}
+                  {groupedMethods[type].map((method) => {
+                    const isValid = isAmountValid(method, amount);
+                    return (
+                      <div
+                        key={method.id}
+                        className={cn(
+                          'cursor-pointer border border-blue-800 hover:border-blue-400 rounded-lg w-full h-24 overflow-hidden relative bg-blue-950/20 transition-all duration-200',
+                          selectPayment?.code === method.code &&
+                            'border-blue-400 bg-blue-900/30',
+                          !isValid && 'opacity-60 pointer-events-none'
+                        )}
+                        onClick={() => isValid && handleSelectMethod(method)}
+                      >
+                        <div className="h-full flex flex-row items-center p-3">
+                          <div className="flex-shrink-0 flex items-center justify-center mr-3">
+                            <Image
+                              width={300}
+                              height={300}
+                              src={method.images}
+                              alt={method.name}
+                              className="size-12 object-contain"
+                            />
+                          </div>
+                          <div className="flex-grow space-y-1">
+                            <p className="text-sm font-medium text-blue-100">
+                              {method.name}
                             </p>
+                            {method.keterangan && (
+                              <p className="text-xs text-blue-300">
+                                {method.keterangan}
+                              </p>
+                            )}
+                          </div>
+                          {selectPayment?.code === method.code && (
+                            <div className="absolute top-2 right-2">
+                              <CheckCircle2 className="h-5 w-5 text-blue-400" />
+                            </div>
+                          )}
+                          {!isValid && (
+                            <div className="absolute top-2 right-2">
+                              <span className="text-xs text-red-400">
+                                Tidak Tersedia
+                              </span>
+                            </div>
                           )}
                         </div>
-
-                        {selectPayment?.code === method.code && (
-                          <div className="absolute top-2 right-2">
-                            <CheckCircle2 className="h-5 w-5 text-blue-400" />
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </AccordionContent>
             </AccordionItem>
           </div>
         ))}
       </Accordion>
-
+      {paymentTypes.length > 0 &&
+        !Object.values(groupedMethods).some((methods) =>
+          methods.some((method) => isAmountValid(method, amount))
+        ) && (
+          <div className="text-red-400 text-sm mt-4">
+            Maaf, jumlah pembayaran tidak sesuai dengan metode pembayaran yang
+            tersedia.
+          </div>
+        )}
       {selectPayment && (
         <div className="transition-all duration-300 ease-in-out">
           <DialogPayment amount={discountedAmount || amount || 0} />

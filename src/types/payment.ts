@@ -6,9 +6,11 @@ export interface PaymentMethod {
   keterangan: string;
   type: string;
   paymentType: string | null;
-  paymentCodeMidtrans: string | null;
+  paymentCodeTripay: string | null;
   createdAt: string;
   updatedAt: string;
+  min: number | null;
+  max: number | null;
 }
 
 export type PaymentDetails = {

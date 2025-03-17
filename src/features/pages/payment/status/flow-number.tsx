@@ -1,8 +1,5 @@
 import React from 'react';
-import { stepsTransaction } from '@/types/transaction';
-
-// Assuming FLOWTRANSACTION is a type with these possible values
-type FLOWTRANSACTION = 'PENDING' | 'PAID' | 'PROCESS' | 'SUCCESS';
+import { FLOWTRANSACTION, stepsTransaction } from '@/types/transaction';
 
 export function FlowProgress({ status }: { status: FLOWTRANSACTION }) {
   // Find current step index

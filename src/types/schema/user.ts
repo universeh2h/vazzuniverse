@@ -3,7 +3,7 @@ export type User = {
   name: string | null;
   username: string;
   role: string;
-  whatsapp: string;
+  whatsapp: string | null;
   balance: string;
   apiKey: string | null;
   otp: string | null;

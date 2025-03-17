@@ -1,5 +1,5 @@
-// URL yang benar untuk validasi nickname Mobile Legends
-export const BASE_URL_VALIDATE_NICKNAME = 'https://api.isan.eu.org/nickname';
+import { BASE_URL_VALIDATE_NICKNAME } from '@/constants';
+import { CheckNickNameReq, validateCheckNickNameReq } from '@/data/check-code';
 
 interface Result {
   success: boolean;
@@ -8,92 +8,6 @@ interface Result {
   server?: string | number;
   name?: string;
   message?: string;
-}
-
-export type GameType =
-  | 'genshin-impact'
-  | 'honkai-star-rail'
-  | 'league-of-legends'
-  | 'arena-of-valor'
-  | 'UNDAWN'
-  | 'call-of-duty-mobile'
-  | 'fc-mobile'
-  | 'metal-slug-awakening'
-  | 'eggy-party'
-  | 'blood-strike'
-  | 'Love-and-Deepspace'
-  | 'stumble-guys'
-  | 'black-clover-m'
-  | 'infinite-borders'
-  | 'laplace-m'
-  | 'hago'
-  | 'speed-drifters'
-  | 'au2-mobile'
-  | 'eternal-city'
-  | 'Sky-Children-of-the-Light'
-  | 'Farlight-84'
-  | 'Draconia-Saga'
-  | 'Tarisland'
-  | 'aether-gazer'
-  | 'lifeafter'
-  | 'point-blank'
-  | 'punishing-gray-raven'
-  | 'sausage-man'
-  | 'super-sus'
-  | 'valorant'
-  | 'zenless-zone-zero'
-  | 'free-fire'
-  | 'mobile-legend';
-
-export interface CheckNickNameReq {
-  userId: string;
-  serverId?: string;
-  type: GameType;
-}
-
-export function validateCheckNickNameReq(data: CheckNickNameReq): boolean {
-  if (!data.userId || typeof data.userId !== 'string') return false;
-  if (data.serverId && typeof data.serverId !== 'string') return false;
-  if (!data.type || !isValidGameType(data.type)) return false;
-  return true;
-}
-
-function isValidGameType(type: string): type is GameType {
-  return [
-    'genshin-impact',
-    'honkai-star-rail',
-    'league-of-legends',
-    'arena-of-valor',
-    'UNDAWN',
-    'call-of-duty-mobile',
-    'fc-mobile',
-    'metal-slug-awakening',
-    'eggy-party',
-    'blood-strike',
-    'Love-and-Deepspace',
-    'stumble-guys',
-    'black-clover-m',
-    'infinite-borders',
-    'laplace-m',
-    'hago',
-    'speed-drifters',
-    'au2-mobile',
-    'eternal-city',
-    'Sky-Children-of-the-Light',
-    'Farlight-84',
-    'Draconia-Saga',
-    'Tarisland',
-    'aether-gazer',
-    'lifeafter',
-    'point-blank',
-    'punishing-gray-raven',
-    'sausage-man',
-    'super-sus',
-    'valorant',
-    'zenless-zone-zero',
-    'free-fire',
-    'mobile-legend',
-  ].includes(type);
 }
 
 export async function CheckNickName(
@@ -122,24 +36,31 @@ export async function CheckNickName(
     url = `${BASE_URL_VALIDATE_NICKNAME}/valo?id=${encodeURIComponent(
       parseInt(request.userId)
     )}`;
+  } else if (request.type === 'arena-of-valor') {
+    url = `${BASE_URL_VALIDATE_NICKNAME}/aov?id=${encodeURIComponent(
+      parseInt(request.userId)
+    )}`;
+  } else if (request.type === 'call-of-duty-mobile') {
+    url = `${BASE_URL_VALIDATE_NICKNAME}/cod?id=${encodeURIComponent(
+      parseInt(request.userId)
+    )}`;
+  } else if (request.type === 'aether-gazer') {
+    url = `${BASE_URL_VALIDATE_NICKNAME}/ag?id=${encodeURIComponent(
+      parseInt(request.userId)
+    )}`;
+  } else if (request.type === 'punishing-gray-raven') {
+    url = `${BASE_URL_VALIDATE_NICKNAME}/ag?id=${encodeURIComponent(
+      parseInt(request.userId)
+    )}`;
   }
-
-  console.log('Fetching URL:', url);
 
   try {
     const response = await fetch(url, {
-      method: 'GET', // Gunakan GET untuk validasi nickname, bukan POST
+      method: 'GET',
     });
 
-    if (!response.ok) {
-      console.error('Error response:', response.status, response.statusText);
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
     const data = await response.json();
-    console.log('API response:', data);
 
-    // Transformasi respons ke format Result
     return {
       success: data.success || false,
       game: request.type,
@@ -149,7 +70,6 @@ export async function CheckNickName(
       message: data.message || null,
     };
   } catch (error) {
-    console.error('Error checking nickname:', error);
     return {
       success: false,
       message: `Error checking nickname: ${

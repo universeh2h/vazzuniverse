@@ -1,5 +1,5 @@
 export const DUITKU_MERCHANT_CODE = process.env.DUITKU_MERCHANT_CODE;
-export const DUTIKU_API_KEY = process.env.DUITKU_API_KEY;
+export const DUITKU_API_KEY = process.env.DUITKU_API_KEY;
 export const DUITKU_BASE_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://passport.duitku.com/webapi'

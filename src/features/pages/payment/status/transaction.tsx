@@ -1,10 +1,8 @@
 import { TransactionDetailsType } from '@/types/transaction';
-
 import { useState } from 'react';
 import {
   CalendarIcon,
   Download,
-  ExternalLink,
   Clock,
   AlertCircle,
   CheckCircle2,
@@ -35,7 +33,16 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { formatDate, FormatPrice } from '@/utils/formatPrice';
-export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
+import { calculateTimeRemaining } from '@/utils/calculate';
+import { getStatusColor, getStatusIcon } from '@/components/ui/payment-status';
+import { Category } from '@/types/category';
+export function TransactionDetails({
+  data,
+  category,
+}: {
+  data: TransactionDetailsType;
+  category: Category;
+}) {
   const [activeTab, setActiveTab] = useState('details');
   const [copied, setCopied] = useState(false);
 
@@ -45,56 +52,7 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SUCCESS':
-      case 'PAID':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'PENDING':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
-      case 'FAILED':
-        return 'bg-red-100 text-red-800 border-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'SUCCESS':
-      case 'PAID':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case 'PENDING':
-        return <Clock className="h-4 w-4 text-amber-600" />;
-      case 'FAILED':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return null;
-    }
-  };
-
-  // Calculate time remaining (for pending status)
-  const calculateTimeRemaining = () => {
-    const createdTime = new Date(data.createdAt).getTime();
-    const currentTime = new Date().getTime();
-    const elapsedMinutes = Math.floor(
-      (currentTime - createdTime) / (1000 * 60)
-    );
-
-    // Assuming payment window is 24 hours
-    const totalMinutes = 24 * 60;
-    const remainingMinutes = totalMinutes - elapsedMinutes;
-
-    if (remainingMinutes <= 0) return { hours: 0, minutes: 0, percentage: 0 };
-
-    const hours = Math.floor(remainingMinutes / 60);
-    const minutes = remainingMinutes % 60;
-    const percentage = (remainingMinutes / totalMinutes) * 100;
-
-    return { hours, minutes, percentage };
-  };
-
-  const timeRemaining = calculateTimeRemaining();
+  const timeRemaining = calculateTimeRemaining({ createdAt: data.createdAt });
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-md">
@@ -122,7 +80,7 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
 
       {data.paymentStatus === 'PENDING' && (
         <div className="px-6 py-4 bg-amber-50 border-b border-amber-100">
-          <Alert variant="warning" className="bg-amber-50 border-amber-200">
+          <Alert variant="default" className="bg-amber-50 border-amber-200">
             <Clock className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800 font-medium">
               Payment Pending
@@ -139,11 +97,17 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
                 {timeRemaining.hours}h {timeRemaining.minutes}m left
               </span>
             </div>
-            <Progress
-              value={timeRemaining.percentage}
-              className="h-2 bg-amber-200"
-              indicatorClassName="bg-amber-500"
-            />
+            <div className="relative">
+              <Progress
+                value={timeRemaining.percentage}
+                className="h-2 bg-amber-200"
+              />
+              <style jsx>{`
+                :global(.progress-indicator) {
+                  background-color: #f59e0b; /* amber-500 */
+                }
+              `}</style>
+            </div>
           </div>
         </div>
       )}
@@ -178,20 +142,22 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
                   <div className="bg-muted/30 rounded-lg p-5 border">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-background border">
-                        <Image
-                          src={data.category.thumbnail || '/placeholder.svg'}
-                          alt={data.category.name}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
+                        {category && (
+                          <Image
+                            src={category.thumbnail}
+                            alt={category.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">
-                          {data.category.name}
+                          {category.name}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {data.category.subName}
+                          {category.subName}
                         </p>
                       </div>
                     </div>
@@ -199,8 +165,12 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
                       <span className="font-medium">User ID:</span>
                       <span>{data.accountId}</span>
 
-                      <span className="font-medium">Server ID:</span>
-                      <span>{data.serverId}</span>
+                      {data.serverId && (
+                        <>
+                          <span className="font-medium">Server ID:</span>
+                          <span>{data.serverId}</span>
+                        </>
+                      )}
 
                       <span className="font-medium">Service:</span>
                       <span>Top up</span>
@@ -441,15 +411,6 @@ export function TransactionDetails({ data }: { data: TransactionDetailsType }) {
             Check Status
           </Button>
         </div>
-        <Button
-          className="w-full sm:w-auto"
-          onClick={() => window.open(data.paymentUrl, '_blank')}
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          {data.paymentStatus === 'PENDING'
-            ? 'Complete Payment'
-            : 'View Payment'}
-        </Button>
       </CardFooter>
     </Card>
   );
