@@ -31,6 +31,7 @@ export type TypePlansStore = {
   setNowa: (wa: string) => void;
   selectPayment: null | Method;
   setSelectPayment: (method: Method | null) => void;
+  reset: () => void;
 };
 
 export const usePlansStore = create<TypePlansStore>((set) => ({
@@ -47,5 +48,22 @@ export const usePlansStore = create<TypePlansStore>((set) => ({
   noWa: null,
   setNowa: (wa: string) => set({ noWa: wa }),
   selectPayment: null,
+  reset: () =>
+    set({
+      selectPlans: null,
+      selectPayment: null,
+      noWa: '',
+      voucher: '',
+      userID: null,
+      serverID: null,
+      categories: null,
+      setCategories: () => set({ categories: null }),
+      setUserId: () => set({ userID: null }),
+      setServerId: () => set({ serverID: null }),
+      setVoucher: () => set({ voucher: '' }),
+      setSelectPayment: () => set({ selectPayment: null }),
+      setSelectPlans: () => set({ selectPlans: null }),
+      setNowa: () => set({ noWa: null }),
+    }),
   setSelectPayment: (payment: Method | null) => set({ selectPayment: payment }),
 }));

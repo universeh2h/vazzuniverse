@@ -32,6 +32,7 @@ export function useMidtransPayment() {
     setIsLoading(true);
     setError(null);
 
+    console.log(orderDetails);
     try {
       const response = await axios.post<PaymentDetails>(
         '/api/payment/initiate',

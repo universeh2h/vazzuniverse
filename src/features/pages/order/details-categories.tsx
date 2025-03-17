@@ -36,6 +36,7 @@ export default function DetailsCategories({ name }: { name: string }) {
       setCategories(data.categories);
     }
   }, [setCategories, data]);
+
   if (isLoading) {
     return <LoadingOverlay />;
   }

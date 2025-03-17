@@ -1,7 +1,13 @@
 import { Check, CreditCard, Package, Loader2 } from 'lucide-react';
+import { Pembelian } from './pembelians';
 
 // Assuming FLOWTRANSACTION is a type with these possible values
-export type FLOWTRANSACTION = 'PENDING' | 'PAID' | 'PROCESS' | 'SUCCESS';
+export type FLOWTRANSACTION =
+  | 'PENDING'
+  | 'PAID'
+  | 'PROCESS'
+  | 'SUCCESS'
+  | 'FAILED';
 export const stepsTransaction = [
   {
     id: 'PENDING',
@@ -24,6 +30,12 @@ export const stepsTransaction = [
   {
     id: 'SUCCESS',
     label: 'Transaksi Selesai',
+    description: 'Transaksi telah Berhasil Dilakukan',
+    icon: Package,
+  },
+  {
+    id: 'Failed',
+    label: 'Transaksi Gagal',
     description: 'Transaksi telah Berhasil Dilakukan',
     icon: Package,
   },
@@ -68,6 +80,7 @@ export type TransactionWithUser = Transaction & {
     whatsapp: string;
   } | null;
 };
+
 export type Invoice = {
   id: number;
   invoiceNumber: string;
@@ -88,8 +101,8 @@ export type Invoice = {
 
 export type TransactionDetailsType = {
   id: number;
-  categoryId: number;
-  layananId: number;
+  categoryId?: number;
+  layananId?: number;
   merchantOrderId: string;
   noWa: string;
   originalAmount: number;
@@ -97,10 +110,10 @@ export type TransactionDetailsType = {
   finalAmount: number;
   paymentCode: string;
   paymentReference: string;
-  paymentStatus: 'SUCCESS' | 'PENDING' | 'FAILED' | 'PAID';
+  paymentStatus: 'SUCCESS' | 'PENDING' | 'FAILED' | 'PAID' | 'PROCESS';
   paymentUrl: string;
   qrString: string | null;
-  statusMessage: string;
+  statusMessage: string | null;
   transactionType: string;
   completedAt: string | null;
   createdAt: string;
@@ -108,6 +121,9 @@ export type TransactionDetailsType = {
   userId: string;
   voucherId: string | null;
   invoice: Invoice[];
+  accountId?: string;
+  serverId?: string | null;
+  pembelian: Pembelian[];
 };
 export type TransactionAll = {
   totalCount: number;

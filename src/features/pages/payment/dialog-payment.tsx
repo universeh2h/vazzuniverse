@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
-
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -24,9 +23,10 @@ import {
 } from 'lucide-react';
 import { FormatPrice } from '@/utils/formatPrice';
 import { toast } from 'sonner';
-import { CheckNickName, type GameType } from '@/lib/check-nickname';
+import { CheckNickName } from '@/lib/check-nickname';
 import { useParams } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
+import { GAMES_WITH_VALIDATION, GameType } from '@/data/check-code';
 
 export function DialogPayment({ amount }: { amount: number }) {
   const {
@@ -52,10 +52,23 @@ export function DialogPayment({ amount }: { amount: number }) {
   const { name } = useParams();
   const [isCheckingNickname, setIsCheckingNickname] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requiresValidation, setRequiresValidation] = useState(false);
+
+  useEffect(() => {
+    const gameType = name as GameType;
+    const needsValidation = GAMES_WITH_VALIDATION.includes(gameType);
+    setRequiresValidation(needsValidation);
+  }, [name]);
 
   useEffect(() => {
     async function checkNickname() {
-      if (!isDialogOpen || !userID || !serverID) {
+      if (!isDialogOpen || !userID || !requiresValidation) {
+        return;
+      }
+
+      // For games that need server ID but it's not provided
+      if (requiresValidation && name === 'mobile-legend' && !serverID) {
+        setError('Server ID is required for this game');
         return;
       }
 
@@ -73,9 +86,7 @@ export function DialogPayment({ amount }: { amount: number }) {
         if (nicknameResult.success) {
           setNicknameData(nicknameResult.name || 'Account found');
         } else {
-          setError(
-            `Invalid account: ${nicknameResult.message || 'Account not found'}`
-          );
+          setError(`Pengguna Di temukan`);
         }
       } catch (err) {
         setError('Failed to check nickname. Please try again.');
@@ -85,7 +96,7 @@ export function DialogPayment({ amount }: { amount: number }) {
     }
 
     checkNickname();
-  }, [isDialogOpen, userID, serverID, name]);
+  }, [isDialogOpen, userID, serverID, name, requiresValidation]);
 
   const handlePayment = async () => {
     if (!noWa || !selectPayment?.code || !selectPlans) {
@@ -93,7 +104,7 @@ export function DialogPayment({ amount }: { amount: number }) {
       return;
     }
 
-    if (!nicknameData && !isCheckingNickname) {
+    if (requiresValidation && !nicknameData && !isCheckingNickname) {
       setError('Please wait for account verification or try again');
       return;
     }
@@ -109,6 +120,9 @@ export function DialogPayment({ amount }: { amount: number }) {
         accountId: userID as string,
         serverId: serverID as string,
         voucherCode: voucher,
+        game: name as string,
+        typeTransaksi: selectPayment.type,
+        nickname: nicknameData ?? 'not-found',
       });
 
       if (response.success) {
@@ -134,6 +148,14 @@ export function DialogPayment({ amount }: { amount: number }) {
     }
   };
 
+  // Determine if payment should be allowed to proceed
+  const isPaymentDisabled =
+    isLoading ||
+    !noWa ||
+    (requiresValidation && isCheckingNickname) ||
+    (requiresValidation && !nicknameData && !error);
+
+  console.log(selectPayment);
   return (
     <Dialog onOpenChange={(open) => setIsDialogOpen(open)}>
       <DialogTrigger asChild>
@@ -198,18 +220,24 @@ export function DialogPayment({ amount }: { amount: number }) {
               </div>
               <div className="text-right">
                 <span className="font-medium text-blue-100">
-                  {isCheckingNickname ? (
-                    <span className="flex items-center">
-                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                      Checking...
-                    </span>
-                  ) : nicknameData ? (
-                    <span className="flex items-center">
-                      <CheckCircle className="mr-1 h-3 w-3 text-green-400" />
-                      {nicknameData}
-                    </span>
+                  {requiresValidation ? (
+                    isCheckingNickname ? (
+                      <span className="flex items-center">
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Checking...
+                      </span>
+                    ) : nicknameData ? (
+                      <span className="flex items-center">
+                        <CheckCircle className="mr-1 h-3 w-3 text-green-400" />
+                        {nicknameData}
+                      </span>
+                    ) : (
+                      <span className="text-red-300">Not verified</span>
+                    )
                   ) : (
-                    <span className="text-red-300">Not verified</span>
+                    <span className="text-blue-100">
+                      No verification needed
+                    </span>
                   )}
                 </span>
                 <p className="text-xs text-blue-400">
@@ -295,12 +323,7 @@ export function DialogPayment({ amount }: { amount: number }) {
         <div className="p-6 pt-3">
           <Button
             onClick={handlePayment}
-            disabled={
-              isLoading ||
-              !noWa ||
-              isCheckingNickname ||
-              (!nicknameData && !error)
-            }
+            disabled={isPaymentDisabled}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-6 rounded-md transition-all shadow-lg disabled:opacity-70 h-12"
           >
             {isLoading ? (

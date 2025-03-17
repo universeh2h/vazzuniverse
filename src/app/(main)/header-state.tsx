@@ -31,7 +31,7 @@ export function CategoryTypeSelector({
       setCategoryType(initialType);
       onTypeChange(categoryType);
     }
-  }, [initialType, categoryType]);
+  }, [initialType, categoryType, onTypeChange]);
 
   return (
     <div className={`flex flex-wrap gap-3 ${className}`}>
