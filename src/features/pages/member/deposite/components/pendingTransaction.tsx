@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { ClockIcon, AlertCircleIcon, ExternalLinkIcon, CopyIcon } from "lucide-react"
+import { ExternalLinkIcon, CopyIcon } from "lucide-react"
 
 interface TransactionProps {
   id: number

@@ -2,11 +2,12 @@ import { DUITKU_BASE_URL, DUITKU_CALLBACK_URL, DUITKU_EXPIRY_PERIOD, DUITKU_MERC
 
 interface CreatePayloadDuitku {
   merchantOrderId: string;
-  amount: string;
+  amount: number
   code: string;
   productDetails: string;
   username: string;
   time: number;
+  callbackUrl? : string
   returnUrl? : string
   sign: string;
 }
@@ -17,6 +18,7 @@ export class Duitku {
     merchantOrderId,
     productDetails,
     time,
+    callbackUrl,
     username,
     sign,
     returnUrl
@@ -28,7 +30,7 @@ export class Duitku {
       paymentMethod: code,
       productDetails,
       customerVaName: 'wafiuddin',
-      callbackUrl: DUITKU_CALLBACK_URL,
+      callbackUrl:callbackUrl ? callbackUrl :  DUITKU_CALLBACK_URL,
       returnUrl: returnUrl  ?  returnUrl  : DUITKU_RETURN_URL,
       signature: sign,
       expiryPeriod: DUITKU_EXPIRY_PERIOD,
