@@ -2,7 +2,9 @@ import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { Prisma } from "@prisma/client";
 import { findUserById, findUserByUsername, getProfile } from "@/app/(auth)/auth/components/server";
-
+interface TotalBalanceType {
+  totalbalance : string
+}
 export const member = router({
   findAll: publicProcedure.input(
     z.object({
@@ -21,7 +23,7 @@ export const member = router({
       const skip = (input.page - 1) * input.perPage;
       const take = input.perPage;
       
-      const [data, total] = await Promise.all([
+      const [data, total,totalbalance] = await Promise.all([
         ctx.prisma.users.findMany({
           where,
           skip,
@@ -30,11 +32,15 @@ export const member = router({
             createdAt: 'desc'
           }
         }),
-        ctx.prisma.users.count({ where })
+        ctx.prisma.users.count({ where }),
+        ctx.prisma.$queryRaw`
+          SELECT SUM(balance) AS 'totalbalance' FROM users
+          WHERE  username != 'moderator'` as Promise<TotalBalanceType[]>
       ]);
       
       return {
         data,
+        totalBalanceUser : totalbalance[0].totalbalance,
         meta: {
           total,
           page: input.page,
