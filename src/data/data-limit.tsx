@@ -1,0 +1,1 @@
+export const DATA_LIMIT = [5,10,15,20,30,50,100] as number[]
