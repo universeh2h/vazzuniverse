@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
       merchantCode,
       amount,
       merchantOrderId,
-      productDetail,
       resultCode,
       signature,
     } = callbackData;
@@ -58,199 +57,7 @@ export async function POST(req: NextRequest) {
     // Using Prisma transaction for all database operations
     return await prisma.$transaction(
       async (tx) => {
-        const Membership = merchantOrderId.match(/^MEM-(\d+)/);
-        const depositIdMatch = merchantOrderId.match(/^DEP-(\d+)/);
         const orderTopUp = merchantOrderId.match(/^VAZ-(\d+)/);
-
-        if (depositIdMatch) {
-          const deposit = await tx.deposits.findFirst({
-            where: {
-              depositId: merchantOrderId,
-            },
-          });
-
-          if (!deposit) {
-            return NextResponse.json(
-              {
-                success: false,
-                message: "Deposit not found",
-              },
-              { status: 404 }
-            );
-          }
-
-          const newStatus = resultCode === "00" ? "SUCCESS" : "FAILED";
-
-          await tx.deposits.update({
-            where: { id: deposit.id },
-            data: {
-              status: newStatus,
-              updatedAt: new Date(),
-            },
-          });
-
-          if (newStatus === "SUCCESS") {
-            // Add credit to user account logic
-            const user = await tx.users.findUnique({
-              where: {
-                username: deposit.username,
-              },select : {
-                balance : true,
-                whatsapp : true,
-                username : true
-              }
-            });
-
-            await handleOrderStatusChange({
-              orderData: {
-                amount: deposit.jumlah,
-                link: `${process.env.NEXTAUTH_URL}/profile`,
-                productName: `DEPOSIT ${user?.username}`,
-                status: newStatus,
-                customerName: deposit.username,
-                method: deposit.metode,
-                orderId: merchantOrderId,
-                whatsapp: user?.whatsapp as string,
-              },
-            });
-
-            if (user) {
-              let saldo = deposit?.jumlah as number;
-              if (
-                deposit?.metode === "QRIS ( All Payment )" ||
-                deposit?.metode === "NQ"
-              ) {
-                const fee = Math.round(saldo * (0.7 / 100));
-                saldo = saldo - fee;
-              }
-
-              const balanceBefore = user.balance;
-              const balanceAfter = user.balance + saldo;
-              
-              await tx.$queryRaw`
-                INSERT INTO balance_histories (
-                  username,
-                  balance_change,
-                  balance_before,
-                  balance_after,
-                  change_type,
-                  description_detail,
-                  updated_at,
-                  created_at
-                ) VALUES (
-                  ${deposit.username}, 
-                  ${saldo}, 
-                  ${balanceBefore}, 
-                  ${balanceAfter}, 
-                  ${"DEPOSIT"},       
-                  ${`Deposit  ${deposit.depositId} via ${deposit.metode}`}, 
-                  NOW(), 
-                  NOW()
-                )
-              `
-              await tx.users.update({
-                where: { username: deposit.username },
-                data: {
-                  balance: { increment: saldo },
-                },
-              });
-            }
-          }
-
-          return NextResponse.json({
-            success: true,
-            message: `Deposit ${newStatus}`,
-            data: {
-              orderId: merchantOrderId,
-              status: newStatus,
-            },
-          });
-        }
-
-        if (Membership) {
-          const deposit = await tx.deposits.findFirst({
-            where: {
-              depositId: merchantOrderId,
-            },
-          });
-
-          if (deposit && deposit.status === "SUCCESS") {
-            return NextResponse.json({
-              success: true,
-              message: "Deposit already processed",
-              data: { orderId: merchantOrderId, status: deposit.status },
-            });
-          }
-
-          if (!deposit) {
-            return NextResponse.json(
-              {
-                success: false,
-                message: "Deposit not found",
-              },
-              { status: 404 }
-            );
-          }
-
-          // Update deposit status based on resultCode
-          const newStatus = resultCode === "00" ? "SUCCESS" : "FAILED";
-
-          await tx.deposits.update({
-            where: { id: deposit.id },
-            data: {
-              status: newStatus,
-              updatedAt: new Date(),
-            },
-          });
-
-          if (newStatus === "SUCCESS") {
-            // Add credit to user account logic
-            const user = await tx.users.findUnique({
-              where: {
-                username: deposit.username,
-              },
-            });
-
-            await handleOrderStatusChange({
-              orderData: {
-                amount: deposit.jumlah,
-                link: `${process.env.NEXTAUTH_URL}/profile`,
-                productName: `Membership Platinum ${user?.username}`,
-                status: newStatus,
-                customerName: deposit.username,
-                method: deposit.metode,
-                orderId: merchantOrderId,
-                whatsapp: user?.whatsapp as string,
-              },
-            });
-
-            if (user?.role === "Member" && deposit.jumlah >= 100000) {
-              await tx.users.update({
-                where: { username: deposit.username },
-                data: {
-                  role: "Platinum",
-                },
-              });
-            } else {
-              await tx.users.update({
-                where: { username: deposit.username },
-                data: {
-                  balance: { increment: deposit.jumlah },
-                },
-              });
-            }
-          }
-
-          return NextResponse.json({
-            success: true,
-            message: `Deposit ${newStatus}`,
-            data: {
-              orderId: merchantOrderId,
-              status: newStatus,
-            },
-          });
-        }
-
         if (orderTopUp) {
           // Find the pembelian record
           const pembelian = await tx.pembelian.findFirst({
@@ -267,6 +74,7 @@ export async function POST(req: NextRequest) {
             });
           }
 
+         
 
           const pembayaran = await tx.pembayaran.findFirst({
             where: {
@@ -284,23 +92,10 @@ export async function POST(req: NextRequest) {
               },
             });
           }
-
-          await handleOrderStatusChange({
-            orderData: {
-              amount: pembelian?.harga as number,
-              link: invoiceLink,
-              productName: pembelian?.layanan as string,
-              status: "PAID",
-              customerName: pembelian?.nickname as string,
-              method: pembayaran?.metode,
-              orderId: merchantOrderId,
-              whatsapp: pembayaran?.noPembeli.toString(),
-            },
-          });
-
-          if (pembelian?.layanan && pembelian) {
+          
+          if (pembelian) {
             const reqtoDigi = await digiflazz.TopUp({
-              productCode: pembelian.providerOrderId as string,
+              productCode: pembelian?.providerOrderId as string,
               userId: pembelian.userId as string,
               reference: merchantOrderId as string,
               serverId: pembelian.zone as string,
@@ -324,18 +119,16 @@ export async function POST(req: NextRequest) {
                   const fee = Math.round(pembelian.harga * (0.7 / 100));
                   purchaseDuitku = pembelian.harga - fee;
                 }
-              
-                await tx.$queryRaw`
+                
+              await tx.$queryRaw`
                   UPDATE pembelians 
-                  SET status = "PAID",
-                      sn = ${datas.sn}, 
+                  SET sn = ${datas.sn}, 
                       purchase_price = ${datas.price},
                       profit_amount = ${purchaseDuitku - datas.price},
                       updated_at = ${new Date()}
                   WHERE order_id = ${merchantOrderId}
                 `;
-
-              } else  {
+              } else {
                 if (pembelian.username) {
                   const user = await tx.users.findUnique({
                     where: {
@@ -354,6 +147,7 @@ export async function POST(req: NextRequest) {
                       const fee = Math.round(pembelian.harga * (0.7 / 100));
                       saldo = pembelian.harga - fee;
                     }
+
                    
                     await tx.users.update({
                       where: {
@@ -363,6 +157,7 @@ export async function POST(req: NextRequest) {
                         balance: { increment: saldo },
                       },
                     });
+
                      await tx.$queryRaw`
                       INSERT INTO balance_histories (
                         username,
