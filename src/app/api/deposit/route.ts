@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
     const duitku = new Duitku();
 
     // Hit Duitku API first
-    console.log('Creating payment in Duitku...');
     const paymentData = await createDuitkuPayment(duitku, {
       amount,
       code,
@@ -93,7 +92,6 @@ export async function POST(req: NextRequest) {
 
     // Check Duitku response
     if (paymentData.statusCode !== '00') {
-      console.error('Duitku payment creation failed:', paymentData);
       return NextResponse.json(
         {
           error: 'Payment creation failed',
@@ -110,7 +108,7 @@ export async function POST(req: NextRequest) {
       username: user.username,
       metode: method.name,
       jumlah: amount,
-      noPembayaran: paymentInfo.displayNumber,
+      noPembayaran: paymentInfo.displayNumber as string,
       depositId: noPembayaran,
       status: 'PENDING', 
     });
@@ -139,9 +137,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('Deposit creation error:', error);
-    
+  } catch (error) {    
     // Return appropriate error response
     if (error instanceof Error) {
       return NextResponse.json(
@@ -227,19 +223,10 @@ async function createDuitkuPayment(
 
 // Helper function to extract payment info based on method type
 function extractPaymentInfo(paymentData: DuitkuResponse, methodCode: string) {
-  const urlPaymentMethods = ['DA', 'OV', 'SA', 'QR'];
-  const vaPaymentMethods = ['I1', 'BR', 'B1', 'BT', 'SP', 'FT', 'M2', 'VA'];
+
+  let displayNumber : string | undefined
   
-  let displayNumber = '';
-  
-  if (urlPaymentMethods.includes(methodCode)) {
-    displayNumber = paymentData.paymentUrl || '';
-  } else if (vaPaymentMethods.includes(methodCode)) {
-    displayNumber = paymentData.vaNumber || '';
-  } else {
-    // Fallback: try vaNumber first, then paymentUrl
-    displayNumber = paymentData.vaNumber || paymentData.vaNumber || paymentData.qrString || '';
-  }
+  displayNumber =  paymentData.vaNumber ||  paymentData.paymentUrl 
 
   return {
     displayNumber,
